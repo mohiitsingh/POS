@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }, []);
 
     const signUp = async (email: string, password: string, metadata: UserMetadata) => {
-        const { data, error } = await supabase.auth.signUp({
+        const {  error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     const signIn = async (email: string, password: string) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const {  error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     const signInWithGoogle = async () => {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/dashboard`,
