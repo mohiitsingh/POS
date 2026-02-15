@@ -1,0 +1,166 @@
+/* Settings.css */
+.settings-container {
+    padding: 2rem;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--color-bg-light);
+}
+
+.settings-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 2rem;
+}
+
+/* Tabs */
+.settings-tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 2rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-light);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--color-primary);
+}
+
+.tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Forms */
+.settings-form-section {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    max-width: 800px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-bg-light);
+    color: var(--color-text);
+}
+
+/* Radio Group */
+.radio-group {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.helper-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+}
+
+/* Actions */
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.setting-btn{
+    margin-left: 1rem;
+}
+
+@media (max-width: 768px) {
+    .settings-container{
+        padding: 0;
+    }
+
+    .settings-header{
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .settings-tabs{
+        flex-direction: column;
+    }
+
+    .tab-btn.active {
+        border: 1px solid var(--color-primary);
+        border-radius: 1rem;
+    }
+
+    .settings-form-section{
+        padding: 1rem
+    }
+
+    .form-row{
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions{
+        flex-direction: column;
+    }
+
+    .setting-btn{
+        margin: 0;
+        margin-top: 1rem;
+    }
+}

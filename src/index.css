@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --color-bg: #ffffff;
+  --color-primary: #4ade80;
+  --color-primary-hover: #22c55e;
+  --color-accent: #facc15;
+  --color-text: #1f2937;
+  --color-text-light: #6b7280;
+  --color-border: #e5e7eb;
+  --color-bg-light: #f9fafb;
+
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--color-text);
+  background-color: var(--color-bg);
+
+  /* font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; */
+}
+
+/* Reset basics */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* min-height: 100vh; */
+  /* width: 100%; */
+  /* background-color: var(--color-bg); */
+  /* background-image: 
+    radial-gradient(circle at 10% 20%, rgba(74, 222, 128, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%); */
+  /* background-attachment: fixed; */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.1;
+  /* font-weight: 700; */
+  /* color: var(--color-text); */
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+ul {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
