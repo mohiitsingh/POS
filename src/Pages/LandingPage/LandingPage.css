@@ -271,11 +271,15 @@
   flex-wrap: wrap;
 }
 
-.brand-logo {
-  font-size: 1.25rem;
+.logo-row .brand-logo {
+  /* font-size: 1.25rem; */
   font-weight: 700;
   color: rgba(255, 255, 255, 0.8);
   opacity: 0.6;
+  height: fit-content;
+  width: fit-content;
+  padding: 0.25rem 0.5rem;
+  margin: 0;
 }
 
 /* 3-Click Magic (Preserved but Ensure Contrast on White) */
@@ -869,7 +873,7 @@
 /* Buttons */
 .pricing-btn {
   width: 100%;
-  padding: 1rem;
+  padding: 1rem !important;
   border-radius: 12px;
   font-weight: 700;
   text-align: center;

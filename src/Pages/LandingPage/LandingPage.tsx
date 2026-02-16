@@ -334,7 +334,7 @@ const LandingPage = () => {
             <p>Perfect for testing the waters</p>
             <div className="price-block">
               <span className="currency">₹</span>
-              <span className="amount">599</span>
+              <span className="amount">999</span>
               <span className="period">/mo</span>
             </div>
             <ul className="pricing-features">
@@ -354,14 +354,14 @@ const LandingPage = () => {
           {/* 6 Months Card */}
           <div className="pricing-card pro active-glow">
             <div className="card-badge popular">Most Popular</div>
-            <div className="discount-pill">Save 30%</div>
+            <div className="discount-pill">Save 10%</div>
             <h3>6 Months</h3>
             <p>For growing cafes</p>
             <div className="price-block">
               <span className="currency">₹</span>
-              <span className="amount">399</span>
+              <span className="amount">899</span>
               <span className="period">/mo</span>
-              <span className="old-price">₹599</span>
+              <span className="old-price">₹999</span>
             </div>
             <ul className="pricing-features">
               <li>
@@ -380,14 +380,14 @@ const LandingPage = () => {
           {/* 12 Months Card */}
           <div className="pricing-card elite">
             <div className="card-badge best-value">Best Value</div>
-            <div className="discount-pill">Save 50%</div>
+            <div className="discount-pill">Save 30%</div>
             <h3>12 Months</h3>
             <p>Maximum savings for pros</p>
             <div className="price-block">
               <span className="currency">₹</span>
-              <span className="amount">299</span>
+              <span className="amount">699</span>
               <span className="period">/mo</span>
-              <span className="old-price">₹599</span>
+              <span className="old-price">₹999</span>
             </div>
             <ul className="pricing-features">
               <li>
