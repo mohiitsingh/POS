@@ -4,6 +4,7 @@ import { useMenu, type Category, type MenuItem } from "../../Contexts/MenuContex
 import { useToast } from "../../Contexts/ToastContext";
 import CategoryModal from "./Components/CategoryModal";
 import ItemModal from "./Components/ItemModal";
+import ConfirmDialog from "../../Components/ConfirmDialog/ConfirmDialog";
 import "./MenuManagement.css";
 
 const MenuManagement = () => {
@@ -25,6 +26,9 @@ const MenuManagement = () => {
 
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [itemToEdit, setItemToEdit] = useState<MenuItem | null>(null);
+
+    // Confirm delete state
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
     // Filter Logic
     const filteredItems = selectedCategoryId === "ALL"
@@ -58,8 +62,13 @@ const MenuManagement = () => {
     };
 
     const handleDeleteItem = (id: string) => {
-        if (window.confirm("Are you sure you want to delete this item? This cannot be undone.")) {
-            deleteMenuItem(id);
+        setPendingDeleteId(id);
+    };
+
+    const handleConfirmDelete = () => {
+        if (pendingDeleteId) {
+            deleteMenuItem(pendingDeleteId);
+            setPendingDeleteId(null);
         }
     };
 
@@ -193,6 +202,15 @@ const MenuManagement = () => {
                 isOpen={isItemModalOpen}
                 onClose={() => setIsItemModalOpen(false)}
                 itemToEdit={itemToEdit}
+            />
+
+            <ConfirmDialog
+                isOpen={pendingDeleteId !== null}
+                title="Delete Menu Item?"
+                message="This item will be permanently deleted and cannot be recovered."
+                confirmLabel="Delete"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setPendingDeleteId(null)}
             />
         </div>
     );

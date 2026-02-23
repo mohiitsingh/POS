@@ -248,6 +248,11 @@
     margin-top: auto;
 }
 
+.order-details-modal-content{
+    max-width: 600px;
+    margin-top: 15rem;
+}
+
 .order-details-modal-content h2{
     margin-bottom: 0;
 }
@@ -286,16 +291,7 @@
         padding: 0;
     }
     
-    /* .orders-table {
-        min-width: 600px;
+    .order-details-modal-content{
+        margin-top: 1rem;
     }
-    
-    .order-summary-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .order-items-header,
-    .order-item-row {
-        grid-template-columns: 1fr;
-    } */
 }

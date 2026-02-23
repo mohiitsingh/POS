@@ -128,7 +128,7 @@
     margin-left: 1rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .settings-container{
         padding: 0;
     }
@@ -144,7 +144,7 @@
 
     .tab-btn.active {
         border: 1px solid var(--color-primary);
-        border-radius: 1rem;
+        border-radius: 0.3rem;
     }
 
     .settings-form-section{

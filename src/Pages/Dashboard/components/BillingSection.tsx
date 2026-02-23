@@ -7,6 +7,9 @@ import { useOrders, type Draft } from "../../../Contexts/OrderContext";
 import { useTables } from "../../../Contexts/TableContext";
 import { useToast } from "../../../Contexts/ToastContext";
 import DraftsListModal from "./DraftsListModal";
+import TableModal from "./TableModal";
+import { printBill, printKOT } from "../../../Utils/printBill";
+import { getNextToken } from "../../../Utils/tokenNumber";
 
 export interface CartItem extends Dish {
     quantity: number;
@@ -27,7 +30,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
     onClearBill,
     onLoadCart,
 }) => {
-    const { billing } = useSettings();
+    const { billing, printer } = useSettings();
     const { saveDraft, drafts, deleteDraft, addOrder } = useOrders();
     const { tables } = useTables();
     const { showSuccess, showError, showWarning } = useToast();
@@ -36,6 +39,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
     const [diningType, setDiningType] = useState("Dine In");
     const [selectedTable, setSelectedTable] = useState("");
     const [isDraftsOpen, setIsDraftsOpen] = useState(false);
+    const [isTableModalOpen, setIsTableModalOpen] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Online'>('Cash');
 
     // Initialize/Update discount when default setting changes
@@ -87,7 +91,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
         setIsDraftsOpen(false);
     };
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         if (cart.length === 0) return;
 
         // Validate business information
@@ -96,21 +100,66 @@ const BillingSection: React.FC<BillingSectionProps> = ({
             return;
         }
 
-        addOrder({
-            items: cart.map(item => ({
-                id: crypto.randomUUID(),
-                menuItemId: item.id.toString(), // Converting number ID to string if needed by OrderItem
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity
-            })),
+        const orderItems = cart.map(item => ({
+            id: crypto.randomUUID(),
+            menuItemId: item.id.toString(),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+        }));
+
+        await addOrder({
+            items: orderItems,
             total,
             status: 'completed',
             tableNo: diningType === 'Dine In' ? selectedTable : undefined,
             paymentMethod
         });
 
-        onClearBill();
+        // --- Print Bill ---
+        const rawTotal = subtotal - validDiscount + (billing.taxType === 'forward' ? taxAmount : 0);
+        const grandTotal = Math.round(rawTotal);
+        const roundOff = grandTotal - rawTotal;
+        const tokenNumber = getNextToken();
+
+        printBill({
+            businessName: billing.businessName,
+            businessAddress: billing.businessAdresss,
+            businessPhone: billing.businessPhone,
+            gstNo: billing.gstNo,
+            fssaiNo: billing.fssaiNo,
+            orderDate: new Date().toISOString(),
+            diningType,
+            tableNo: diningType === 'Dine In' ? selectedTable : undefined,
+            tokenNumber,
+            orderId: crypto.randomUUID(),
+            paymentMethod,
+            items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+            subtotal,
+            discount: validDiscount,
+            taxLabel: billing.taxValueType === 'percentage'
+                ? `Tax (${billing.taxValue}%)`
+                : 'Tax (Fixed)',
+            taxAmount,
+            roundOff,
+            grandTotal,
+            paperSize: printer.paperSize,
+            fontSize: printer.fontSize,
+        });
+
+        // --- KOT Print (if KOT printer is configured) ---
+        if (printer.kotPrinter.trim()) {
+            printKOT({
+                tokenNumber,
+                diningType,
+                tableNo: diningType === 'Dine In' ? selectedTable : undefined,
+                items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
+                paperSize: printer.paperSize,
+                fontSize: printer.fontSize,
+            });
+        }
+
+        onLoadCart([]);
         showSuccess("Order placed successfully!");
     };
 
@@ -123,6 +172,13 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                 onResume={handleResumeDraft}
                 onDelete={deleteDraft}
             />
+            <TableModal
+                isOpen={isTableModalOpen}
+                onClose={() => setIsTableModalOpen(false)}
+                tables={tables}
+                drafts={drafts}
+                onSelectTable={handleResumeDraft}
+            />
 
             {/* Section 1: Drafts & New Bill */}
             <div className="billing-header">
@@ -131,7 +187,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                         <FileText size={16} /> Draft List
                         {drafts.length > 0 && <span style={{ marginLeft: '0.5rem', background: '#3b82f6', color: 'white', fontSize: '0.7rem', padding: '0 0.4rem', borderRadius: '1rem' }}>{drafts.length}</span>}
                     </button>
-                    <button className="action-btn secondary">
+                    <button className="action-btn secondary" onClick={() => setIsTableModalOpen(true)}>
                         <Coffee size={16} /> Table
                     </button>
                 </div>

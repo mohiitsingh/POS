@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "../../../Contexts/SettingsContext";
 import { useToast } from "../../../Contexts/ToastContext";
 import { Save } from "lucide-react";
@@ -7,6 +7,11 @@ const BillingSettings = () => {
     const { billing, updateBilling } = useSettings();
     const { showSuccess, showError } = useToast();
     const [formData, setFormData] = useState(billing);
+
+    // Sync form when billing loads asynchronously from Supabase
+    useEffect(() => {
+        setFormData(billing);
+    }, [billing]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -69,6 +74,17 @@ const BillingSettings = () => {
                 <label className="form-label">Business Address:</label>
                 <input name="businessAdresss" className="form-input" id="businessAdresss"
                     value={formData.businessAdresss} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+                <label className="form-label">Business Phone (Optional)</label>
+                <input
+                    type="tel"
+                    name="businessPhone"
+                    className="form-input"
+                    placeholder="e.g. +91 98765 43210"
+                    value={formData.businessPhone ?? ''}
+                    onChange={handleChange}
+                />
             </div>
 
             {/* Tax Settings */}

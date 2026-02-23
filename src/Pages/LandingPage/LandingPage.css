@@ -81,6 +81,7 @@
 }
 
 .btn-login:hover {
+  color: var(--color-primary);
   background: var(--color-bg-light);
 }
 
@@ -168,6 +169,7 @@
   white-space: nowrap;
   transition: transform 0.2s;
   display: flex;
+  justify-content: center;
 }
 
 .btn-primary-solid:hover {

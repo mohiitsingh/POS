@@ -96,7 +96,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
                     return (
                         <div key={dish.id} className="dish-card">
 
-                            <div className="dish-info">
+                            <div className="dish-info" onClick={() => onaddToCart(dish)}>
                                 <h3>{dish.name}</h3>
                                 <p className="dish-price">₹{dish.price.toFixed(2)}</p>
                             </div>

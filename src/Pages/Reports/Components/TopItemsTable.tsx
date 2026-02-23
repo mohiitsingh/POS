@@ -1,3 +1,5 @@
+import { Medal } from "lucide-react";
+
 interface TopItem {
     name: string;
     quantity: number;
@@ -11,7 +13,7 @@ interface TopItemsTableProps {
 const TopItemsTable = ({ items }: TopItemsTableProps) => {
     return (
         <div className="top-items-section">
-            <h3 className="section-title">🥇 Top Selling Disheset</h3>
+            <h3 className="section-title"><Medal size={30} color="#00fa1d" absoluteStrokeWidth /> Top Selling Disheset</h3>
 
             {items.length === 0 ? (
                 <p style={{ color: "var(--color-text-light)", textAlign: "center" }}>No sales for selected period</p>

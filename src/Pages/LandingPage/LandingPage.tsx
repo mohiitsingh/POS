@@ -348,7 +348,7 @@ const LandingPage = () => {
                 <Check size={16} /> Email Support
               </li>
             </ul>
-            <button className="btn-outline pricing-btn">Start Trial</button>
+            <button className="btn-outline pricing-btn" onClick={() => navigate("/login")}>Start Trial</button>
           </div>
 
           {/* 6 Months Card */}
@@ -374,7 +374,7 @@ const LandingPage = () => {
                 <Check size={16} /> Priority Support
               </li>
             </ul>
-            <button className="btn-primary pricing-btn">Get Started</button>
+            <button className="btn-primary pricing-btn" onClick={() => navigate("/login")}>Get Started</button>
           </div>
 
           {/* 12 Months Card */}
@@ -402,7 +402,7 @@ const LandingPage = () => {
             </ul>
             <button
               className="btn-primary-solid pricing-btn"
-              style={{ width: "100%" }}
+              style={{ width: "100%" }} onClick={() => navigate("/login")}
             >
               Go Annual
             </button>

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, X, Armchair } from 'lucide-react';
 import { useTables, type Table } from '../../Contexts/TableContext';
+import ConfirmDialog from '../../Components/ConfirmDialog/ConfirmDialog';
 import './TableManagement.css';
 
 const TableManagement = () => {
     const { tables, addTable, updateTable, deleteTable } = useTables();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTable, setEditingTable] = useState<Table | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
     // Form State
     const [tableNo, setTableNo] = useState('');
@@ -77,7 +79,7 @@ const TableManagement = () => {
                                 <button className="action-icon-btn" onClick={() => handleOpenModal(table)} title="Edit">
                                     <Edit2 size={18} />
                                 </button>
-                                <button className="action-icon-btn delete" onClick={() => deleteTable(table.id)} title="Delete">
+                                <button className="action-icon-btn delete" onClick={() => setPendingDeleteId(table.id)} title="Delete">
                                     <Trash2 size={18} />
                                 </button>
                             </div>
@@ -138,6 +140,15 @@ const TableManagement = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={pendingDeleteId !== null}
+                title="Delete Table?"
+                message="This table will be permanently deleted and cannot be recovered."
+                confirmLabel="Delete"
+                onConfirm={() => { deleteTable(pendingDeleteId!); setPendingDeleteId(null); }}
+                onCancel={() => setPendingDeleteId(null)}
+            />
         </div>
     );
 };

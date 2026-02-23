@@ -120,6 +120,10 @@
     font-weight: 600;
     margin-bottom: 1.5rem;
     color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
 /* Chart Container */

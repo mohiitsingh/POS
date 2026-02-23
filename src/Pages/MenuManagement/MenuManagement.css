@@ -34,6 +34,7 @@
     align-items: center;
     gap: 0.5rem;
     transition: background-color 0.2s;
+    justify-content: center;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -53,6 +54,11 @@
     border-radius: 0.5rem;
     font-weight: 500;
     transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    flex-wrap: wrap;
 }
 
 .btn-secondary:hover {
@@ -224,7 +230,6 @@
 }
 
 .modal-content {
-    background-color: white !important;
     border-radius: 1rem;
     padding: 2rem;
     width: 100%;

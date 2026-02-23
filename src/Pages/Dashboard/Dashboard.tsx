@@ -1,9 +1,10 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import MenuSection from "./components/MenuSection";
 import BillingSection, { type CartItem } from "./components/BillingSection";
 import { useMenu } from "../../Contexts/MenuContext";
 import { type Dish } from "./data";
+import ConfirmDialog from "../../Components/ConfirmDialog/ConfirmDialog";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -14,7 +15,25 @@ const Dashboard = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [dietFilter, setDietFilter] = useState("All");
-    const [cart, setCart] = useState<CartItem[]>([]);
+    const CART_STORAGE_KEY = 'pos_active_cart';
+    const [cart, setCart] = useState<CartItem[]>(() => {
+        try {
+            const saved = localStorage.getItem(CART_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+
+    // Persist active cart to localStorage so navigation doesn't wipe it
+    useEffect(() => {
+        if (cart.length > 0) {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+        } else {
+            localStorage.removeItem(CART_STORAGE_KEY);
+        }
+    }, [cart]);
 
     // Mapped Data
     const categoryNames = useMemo(() => ["All", ...categories.filter(c => c.isActive).map(c => c.name)], [categories]);
@@ -105,9 +124,7 @@ const Dashboard = () => {
 
     const handleClearBill = () => {
         if (cart.length > 0) {
-            if (window.confirm("Are you sure you want to clear the current bill?")) {
-                setCart([]);
-            }
+            setConfirmClearOpen(true);
         } else {
             setCart([]);
         }
@@ -118,32 +135,46 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="pos-dashboard">
-            {/* Left Panel: Menu */}
-            <MenuSection
-                dishes={filteredDishes}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                selectedCategory={selectedCategory}
-                setSelectedCategory={setSelectedCategory}
-                dietFilter={dietFilter}
-                setDietFilter={setDietFilter}
-                cartItems={cartItemsMap}
-                onaddToCart={handleAddToCart}
-                onRemoveFromCart={handleRemoveFromCart}
-                onUpdateQuantity={handleUpdateQuantity}
-                categories={categoryNames}
-            />
+        <>
+            <div className="pos-dashboard">
+                {/* Left Panel: Menu */}
+                <MenuSection
+                    dishes={filteredDishes}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
+                    dietFilter={dietFilter}
+                    setDietFilter={setDietFilter}
+                    cartItems={cartItemsMap}
+                    onaddToCart={handleAddToCart}
+                    onRemoveFromCart={handleRemoveFromCart}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    categories={categoryNames}
+                />
 
-            {/* Right Panel: Billing */}
-            <BillingSection
-                cart={cart}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItemCompletely}
-                onClearBill={handleClearBill}
-                onLoadCart={handleLoadCart}
+                {/* Right Panel: Billing */}
+                <BillingSection
+                    cart={cart}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemoveItem={handleRemoveItemCompletely}
+                    onClearBill={handleClearBill}
+                    onLoadCart={handleLoadCart}
+                />
+            </div>
+
+            <ConfirmDialog
+                isOpen={confirmClearOpen}
+                title="Clear Current Bill?"
+                message="All items in the cart will be removed. This action cannot be undone."
+                confirmLabel="Clear Bill"
+                onConfirm={() => {
+                    setCart([]);
+                    setConfirmClearOpen(false);
+                }}
+                onCancel={() => setConfirmClearOpen(false)}
             />
-        </div>
+        </>
     );
 };
 

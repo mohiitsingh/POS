@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "../../../Contexts/SettingsContext";
 import { useToast } from "../../../Contexts/ToastContext";
 import { Save } from "lucide-react";
@@ -7,6 +7,11 @@ const ProfileSettings = () => {
     const { profile, updateProfile } = useSettings();
     const { showSuccess, showError } = useToast();
     const [formData, setFormData] = useState(profile);
+
+    // Sync form when profile loads asynchronously from Supabase
+    useEffect(() => {
+        setFormData(profile);
+    }, [profile]);
 
     // Password State
     const [passwordData, setPasswordData] = useState({
@@ -24,7 +29,7 @@ const ProfileSettings = () => {
 
     const handleSave = () => {
         // Validation logic could go here
-        if (!formData.firstName || !formData.email) {
+        if (!formData.firstName) {
             showError("Name and Email are required");
             return;
         }
@@ -84,8 +89,12 @@ const ProfileSettings = () => {
                         name="email"
                         className="form-input"
                         value={formData.email}
-                        onChange={handleChange}
+                        disabled
+                        style={{ opacity: 0.55, cursor: 'not-allowed', background: 'var(--color-border, #e2e8f0)' }}
                     />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light, #94a3b8)', marginTop: '4px', display: 'block' }}>
+                        Email is managed by your account and cannot be changed here.
+                    </span>
                 </div>
                 <div className="form-group">
                     <label className="form-label">Mobile Number</label>

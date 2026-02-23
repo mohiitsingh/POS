@@ -1,4 +1,4 @@
-import { DollarSign, ShoppingBag, Utensils, TrendingUp } from "lucide-react";
+import { IndianRupee, ShoppingBag, Utensils, TrendingUp } from "lucide-react";
 
 interface SummaryWrapperProps {
     revenue: number;
@@ -12,7 +12,8 @@ const SummaryCards = ({ revenue, ordersCount, dishesSold, avgOrderValue }: Summa
         {
             label: "Total Revenue",
             value: `₹${revenue.toLocaleString()}`,
-            icon: DollarSign,
+            icon: IndianRupee,
+
         },
         {
             label: "Total Orders",

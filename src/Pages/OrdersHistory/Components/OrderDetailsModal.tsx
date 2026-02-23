@@ -20,7 +20,7 @@ const OrderDetailsModal = ({ isOpen, onClose, order }: OrderDetailsModalProps) =
 
     return (
         <div className="order-details-modal modal-overlay">
-            <div className="modal-content order-details-modal-content" style={{ maxWidth: '600px', marginTop: '5rem' }}>
+            <div className="modal-content order-details-modal-content" >
                 <div className="modal-header">
                     <h2>Order Details</h2>
                     <button onClick={onClose} className="close-btn">

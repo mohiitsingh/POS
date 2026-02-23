@@ -52,12 +52,12 @@
 }
 
 .modal-content {
-    background-color: var(--bg-secondary);
+    background-color: var(--color-bg);
     padding: 2rem;
     border-radius: 12px;
     width: 400px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -1,6 +1,6 @@
 
 import "./BrandingPanel.css";
-import illustration from "../../assets/pos_dashboard_illustration.png";
+import illustration from "../../assets/background.jpg";
 
 const BrandingPanel = () => {
     return (

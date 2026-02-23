@@ -1,23 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "../../../Contexts/SettingsContext";
 import { useOrders } from "../../../Contexts/OrderContext";
 import { useToast } from "../../../Contexts/ToastContext";
-import { Save, Printer, FileText, Repeat } from "lucide-react";
+import { Save, FileText, Repeat } from "lucide-react";
+import { printBill, printKOT, type BillPrintData } from "../../../Utils/printBill";
 
 const PrinterSettings = () => {
-    const { printer, updatePrinter } = useSettings();
+    const { printer, updatePrinter, billing } = useSettings();
     const { orders } = useOrders();
     const { showSuccess, showWarning } = useToast();
     const [formData, setFormData] = useState(printer);
 
-    // Mock Printer List
-    const availablePrinters = [
-        "System Default",
-        "EPSON TM-T82",
-        "POS-58 Thermal",
-        "HP LaserJet P1005",
-        "Microsoft Print to PDF"
-    ];
+    // Sync form when printer settings load asynchronously from Supabase
+    useEffect(() => {
+        setFormData(printer);
+    }, [printer]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -30,32 +27,64 @@ const PrinterSettings = () => {
         showSuccess("Printer settings saved successfully!");
     };
 
-    const handleTestPrint = (type: 'bill' | 'kot') => {
-        // In a real Desktop App (Electron), this would send data to specific printer.
-        // In Web, we just invoke window.print() with specific content mock.
-        // Here we just simulate the action.
-        const w = window.open('', '_blank');
-        if (w) {
-            w.document.write(`
-                <html>
-                <head><title>Test ${type.toUpperCase()}</title></head>
-                <body style="font-family: monospace; padding: 20px;">
-                    <h2 style="text-align: center;">TEST ${type.toUpperCase()} PRINT</h2>
-                    <hr/>
-                    <p style="text-align: center;">Printer: ${type === 'bill' ? formData.billPrinter : formData.kotPrinter}</p>
-                    <p style="text-align: center;">Format: ${formData.paperSize}</p>
-                    <p style="text-align: center;">Font: ${formData.fontSize}</p>
-                    <hr/>
-                    <p>Item 1 ................... 10.00</p>
-                    <p>Item 2 ................... 20.00</p>
-                    <hr/>
-                    <h3 style="text-align: right;">Total: 30.00</h3>
-                </body>
-                </html>
-            `);
-            w.document.close();
-            w.print();
-        }
+    /** Build a sample BillPrintData for test prints */
+    const buildSampleBillData = (): BillPrintData => {
+        const now = new Date().toISOString();
+        const subtotal = 350;
+        const discount = 0;
+        const taxAmount = billing.taxValueType === 'percentage'
+            ? (subtotal - discount) * (billing.taxValue / 100)
+            : billing.taxValue;
+        const rawTotal = subtotal - discount + (billing.taxType === 'forward' ? taxAmount : 0);
+        const grandTotal = Math.round(rawTotal);
+        const roundOff = grandTotal - rawTotal;
+        return {
+            businessName: billing.businessName || 'Your Business Name',
+            businessAddress: billing.businessAdresss || '123, Sample Street, City',
+            businessPhone: billing.businessPhone || '',
+            gstNo: billing.gstNo || '',
+            fssaiNo: billing.fssaiNo || '',
+            orderDate: now,
+            diningType: 'Dine In',
+            tableNo: 'T1',
+            tokenNumber: 1,
+            orderId: 'SAMPLE00-0000-0000-0000-SAMPLEORDER',
+            paymentMethod: 'Cash',
+            items: [
+                { name: 'Paneer Butter Masala', quantity: 2, price: 120 },
+                { name: 'Butter Naan', quantity: 3, price: 30 },
+                { name: 'Lassi', quantity: 1, price: 50 },
+            ],
+            subtotal,
+            discount,
+            taxLabel: billing.taxValueType === 'percentage'
+                ? `Tax (${billing.taxValue}%)`
+                : 'Tax (Fixed)',
+            taxAmount,
+            roundOff,
+            grandTotal,
+            paperSize: formData.paperSize,
+            fontSize: formData.fontSize,
+        };
+    };
+
+    const handleTestPrint = () => {
+        printBill(buildSampleBillData());
+    };
+
+    const handleTestKOT = () => {
+        printKOT({
+            tokenNumber: 1,
+            diningType: 'Dine In',
+            tableNo: 'T1',
+            items: [
+                { name: 'Paneer Butter Masala', quantity: 2 },
+                { name: 'Butter Naan', quantity: 3 },
+                { name: 'Lassi', quantity: 1 },
+            ],
+            paperSize: formData.paperSize,
+            fontSize: formData.fontSize,
+        });
     };
 
     const handleReprintLast = () => {
@@ -63,62 +92,76 @@ const PrinterSettings = () => {
             showWarning("No past orders found to reprint.");
             return;
         }
-        // Get last order (sorted by date desc, but mock orders are list. 
-        // OrderContext adds new to end? Yes, [...prev, new]. So last is last index.
-        const lastOrder = orders[orders.length - 1];
+        const lastOrder = [...orders].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )[0];
 
-        const w = window.open('', '_blank');
-        if (w) {
-            w.document.write(`
-                <html>
-                <head><title>Reprint Order #${lastOrder.id.slice(0, 6)}</title></head>
-                <body style="font-family: monospace; padding: 20px;">
-                    <h2 style="text-align: center;">REPRINT LAST BILL</h2>
-                    <p style="text-align: center;">Order ID: #${lastOrder.id.slice(0, 8)}</p>
-                    <p style="text-align: center;">Date: ${new Date(lastOrder.date).toLocaleString()}</p>
-                    <hr/>
-                    ${lastOrder.items.map(item => `
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>${item.name} x${item.quantity}</span>
-                            <span>${(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                    `).join('')}
-                    <hr/>
-                    <h3 style="text-align: right;">Total: ₹${lastOrder.total.toFixed(2)}</h3>
-                </body>
-                </html>
-            `);
-            w.document.close();
-            w.print();
-        }
+        const subtotal = lastOrder.items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const discount = 0;
+        const taxAmount = billing.taxValueType === 'percentage'
+            ? (subtotal - discount) * (billing.taxValue / 100)
+            : billing.taxValue;
+        const rawTotal = subtotal - discount + (billing.taxType === 'forward' ? taxAmount : 0);
+        const grandTotal = Math.round(rawTotal);
+        const roundOff = grandTotal - rawTotal;
+
+        printBill({
+            businessName: billing.businessName,
+            businessAddress: billing.businessAdresss,
+            businessPhone: billing.businessPhone || '',
+            gstNo: billing.gstNo || '',
+            fssaiNo: billing.fssaiNo || '',
+            orderDate: lastOrder.date,
+            diningType: lastOrder.tableNo ? 'Dine In' : 'Take Away',
+            tableNo: lastOrder.tableNo,
+            tokenNumber: 0, // reprint — token not trackable retroactively
+            orderId: lastOrder.id,
+            paymentMethod: lastOrder.paymentMethod,
+            items: lastOrder.items.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+            subtotal,
+            discount,
+            taxLabel: billing.taxValueType === 'percentage'
+                ? `Tax (${billing.taxValue}%)`
+                : 'Tax (Fixed)',
+            taxAmount,
+            roundOff,
+            grandTotal,
+            paperSize: formData.paperSize,
+            fontSize: formData.fontSize,
+        });
     };
 
     return (
         <div className="settings-form-section">
             <h2 className="section-title">Printer Configuration</h2>
+            <p style={{ color: 'var(--color-text-light)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                Enter the <strong>exact printer name</strong> as shown in your OS printer settings. The OS print dialog will appear when printing — you can also change the printer there.
+            </p>
 
             <div className="form-row">
                 <div className="form-group">
                     <label className="form-label">Bill Printer</label>
-                    <select
+                    <input
+                        type="text"
                         name="billPrinter"
-                        className="form-select"
+                        className="form-input"
+                        placeholder="e.g. EPSON TM-T82"
                         value={formData.billPrinter}
                         onChange={handleChange}
-                    >
-                        {availablePrinters.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
+                    />
+                    <span className="helper-text">Leave blank to use the system default</span>
                 </div>
                 <div className="form-group">
-                    <label className="form-label">KOT Printer</label>
-                    <select
+                    <label className="form-label">KOT Printer <span style={{ color: 'var(--color-text-light)', fontWeight: 400 }}>(Optional)</span></label>
+                    <input
+                        type="text"
                         name="kotPrinter"
-                        className="form-select"
+                        className="form-input"
+                        placeholder="e.g. POS-58 Thermal (leave blank to skip KOT)"
                         value={formData.kotPrinter}
                         onChange={handleChange}
-                    >
-                        {availablePrinters.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
+                    />
+                    <span className="helper-text">If empty, KOT print will be skipped</span>
                 </div>
             </div>
 
@@ -162,26 +205,21 @@ const PrinterSettings = () => {
                 </div>
             </div>
 
-            <div className="form-group">
-                <label className="radio-label">
-                    <input
-                        type="checkbox"
-                        name="showLogo"
-                        checked={formData.showLogo}
-                        onChange={handleChange}
-                    /> Show Business Logo on Bill
-                </label>
-            </div>
-
             <div className="form-actions" style={{ justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn-secondary" onClick={() => handleTestPrint('bill')}>
+                    <button className="btn-secondary" onClick={handleTestPrint}>
                         <FileText size={16} style={{ marginRight: '8px' }} /> Test Bill Print
                     </button>
-                    <button className="btn-secondary" onClick={() => handleTestPrint('kot')}>
-                        <Printer size={16} style={{ marginRight: '8px' }} /> Test KOT Print
-                    </button>
-                    <button className="btn-secondary" onClick={handleReprintLast} style={{ color: '#ea580c', borderColor: '#fdba74', background: '#fff7ed' }}>
+                    {formData.kotPrinter.trim() && (
+                        <button className="btn-secondary" onClick={handleTestKOT}>
+                            <FileText size={16} style={{ marginRight: '8px' }} /> Test KOT Print
+                        </button>
+                    )}
+                    <button
+                        className="btn-secondary"
+                        onClick={handleReprintLast}
+                        style={{ color: '#ea580c', borderColor: '#fdba74', background: '#fff7ed' }}
+                    >
                         <Repeat size={16} style={{ marginRight: '8px' }} /> Reprint Last Bill
                     </button>
                 </div>

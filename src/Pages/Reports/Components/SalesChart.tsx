@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { parseISO, getHours, getDate, getMonth } from 'date-fns';
 import type { Order } from '../../../Contexts/OrderContext';
+import { ChartNoAxesCombined } from 'lucide-react';
 
 interface SalesChartProps {
     orders: Order[];
@@ -63,7 +64,7 @@ const SalesChart = ({ orders, filterType }: SalesChartProps) => {
 
     return (
         <div className="chart-section">
-            <h3 className="section-title">📉 Orders Trend</h3>
+            <h3 className="section-title"><span><ChartNoAxesCombined color="#ff5e00ff" absoluteStrokeWidth /></span> Orders Trend</h3>
             <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>

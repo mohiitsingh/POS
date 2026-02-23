@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../config/supabase";
 
@@ -12,11 +12,12 @@ export interface UserProfile {
 
 export interface BillingSettings {
     businessName: string;
+    businessPhone: string;
     businessAdresss: string;
     gstNo: string;
     fssaiNo: string;
     logoUrl: string | null;
-    taxType: "forward" | "inclusive"; // 'inclusive' reserved for future
+    taxType: "forward" | "inclusive";
     taxValueType: "percentage" | "fixed";
     taxValue: number;
     discountType: "percentage" | "fixed";
@@ -51,20 +52,21 @@ const defaultProfile: UserProfile = {
 
 const defaultBilling: BillingSettings = {
     businessName: "",
+    businessPhone: "",
     businessAdresss: "",
     gstNo: "",
     fssaiNo: "",
     logoUrl: null,
     taxType: "forward",
     taxValueType: "percentage",
-    taxValue: 5,
+    taxValue: 0,
     discountType: "percentage",
     discountValue: 0,
 };
 
 const defaultPrinter: PrinterSettings = {
-    billPrinter: 'System Default',
-    kotPrinter: 'System Default',
+    billPrinter: '',
+    kotPrinter: '',
     paperSize: '80mm',
     showLogo: false,
     fontSize: 'medium'
@@ -77,85 +79,20 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
 
+    // Track whether we have finished the initial fetch — auto-saves must NOT run until then
+    const fetchedRef = useRef(false);
+
     // State
     const [profile, setProfile] = useState<UserProfile>(defaultProfile);
     const [billing, setBilling] = useState<BillingSettings>(defaultBilling);
     const [printer, setPrinter] = useState<PrinterSettings>(defaultPrinter);
 
-    // Fetch settings from Supabase
-    useEffect(() => {
-        const fetchSettings = async () => {
-            if (!user) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase
-                    .from('user_settings')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Error fetching settings:', error);
-                    // Fall back to localStorage
-                    loadFromLocalStorage();
-                } else if (data) {
-                    // Load from database
-                    setProfile(data.profile_data || defaultProfile);
-                    setBilling(data.billing_data || defaultBilling);
-                    setPrinter(data.printer_data || defaultPrinter);
-                } else {
-                    // No settings found, use defaults or localStorage
-                    loadFromLocalStorage();
-                }
-            } catch (err) {
-                console.error('Error in fetchSettings:', err);
-                loadFromLocalStorage();
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const loadFromLocalStorage = () => {
-            const savedProfile = localStorage.getItem("pos_profile");
-            const savedBilling = localStorage.getItem("pos_billing");
-            const savedPrinter = localStorage.getItem("pos_printer_settings");
-
-            if (savedProfile) setProfile(JSON.parse(savedProfile));
-            if (savedBilling) setBilling(JSON.parse(savedBilling));
-            if (savedPrinter) setPrinter(JSON.parse(savedPrinter));
-        };
-
-        fetchSettings();
-    }, [user]);
-
-    // Sync profile with Supabase user metadata
-    useEffect(() => {
-        if (user) {
-            const metadata = user.user_metadata || {};
-            const fullName = metadata.fullName || '';
-            const nameParts = fullName.trim().split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
-
-            const syncedProfile = {
-                firstName,
-                lastName,
-                email: user.email || '',
-                mobile: metadata.phone || ''
-            };
-
-            // Only update if there's actual user data
-            if (fullName || metadata.phone || user.email) {
-                setProfile(syncedProfile);
-            }
-        }
-    }, [user]);
-
     // Upsert settings to Supabase
-    const saveToDatabase = async (profileData: UserProfile, billingData: BillingSettings, printerData: PrinterSettings) => {
+    const saveToDatabase = async (
+        profileData: UserProfile,
+        billingData: BillingSettings,
+        printerData: PrinterSettings
+    ) => {
         if (!user) return;
 
         try {
@@ -179,27 +116,100 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Persist to localStorage and Supabase when settings change
+    // Fetch settings from Supabase on login
     useEffect(() => {
-        if (!loading && user) {
-            localStorage.setItem("pos_profile", JSON.stringify(profile));
-            saveToDatabase(profile, billing, printer);
-        }
-    }, [profile, loading, user]);
+        const fetchSettings = async () => {
+            // Reset fetch guard whenever user changes
+            fetchedRef.current = false;
+            setLoading(true);
 
-    useEffect(() => {
-        if (!loading && user) {
-            localStorage.setItem("pos_billing", JSON.stringify(billing));
-            saveToDatabase(profile, billing, printer);
-        }
-    }, [billing, loading, user]);
+            if (!user) {
+                setLoading(false);
+                return;
+            }
 
+            try {
+                const { data, error } = await supabase
+                    .from('user_settings')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    // Real error — fall back to localStorage
+                    console.error('Error fetching settings:', error);
+                    loadFromLocalStorage();
+                } else if (data) {
+                    // Load all three settings from DB
+                    const savedProfile: UserProfile = data.profile_data || defaultProfile;
+                    const savedBilling: BillingSettings = data.billing_data || defaultBilling;
+                    const savedPrinter: PrinterSettings = data.printer_data || defaultPrinter;
+
+                    // Always ensure email is up-to-date from auth (it's the source of truth)
+                    savedProfile.email = user.email || savedProfile.email;
+
+                    setProfile(savedProfile);
+                    setBilling(savedBilling);
+                    setPrinter(savedPrinter);
+                } else {
+                    // No row yet — seed profile with auth metadata, use defaults for rest
+                    const metadata = user.user_metadata || {};
+                    const fullName = metadata.fullName || '';
+                    const nameParts = fullName.trim().split(' ');
+                    setProfile({
+                        firstName: nameParts[0] || '',
+                        lastName: nameParts.slice(1).join(' ') || '',
+                        email: user.email || '',
+                        mobile: metadata.phone || ''
+                    });
+                    setBilling(defaultBilling);
+                    setPrinter(defaultPrinter);
+
+                    // Also check localStorage as secondary fallback
+                    loadFromLocalStorage();
+                }
+            } catch (err) {
+                console.error('Error in fetchSettings:', err);
+                loadFromLocalStorage();
+            } finally {
+                fetchedRef.current = true;
+                setLoading(false);
+            }
+        };
+
+        const loadFromLocalStorage = () => {
+            const savedProfile = localStorage.getItem("pos_profile");
+            const savedBilling = localStorage.getItem("pos_billing");
+            const savedPrinter = localStorage.getItem("pos_printer_settings");
+
+            if (savedProfile) setProfile(JSON.parse(savedProfile));
+            if (savedBilling) setBilling(JSON.parse(savedBilling));
+            if (savedPrinter) setPrinter(JSON.parse(savedPrinter));
+        };
+
+        fetchSettings();
+    }, [user]);
+
+    // Auto-save profile whenever it changes — but ONLY after initial fetch is done
     useEffect(() => {
-        if (!loading && user) {
-            localStorage.setItem("pos_printer_settings", JSON.stringify(printer));
-            saveToDatabase(profile, billing, printer);
-        }
-    }, [printer, loading, user]);
+        if (!fetchedRef.current || loading || !user) return;
+        localStorage.setItem("pos_profile", JSON.stringify(profile));
+        saveToDatabase(profile, billing, printer);
+    }, [profile]);
+
+    // Auto-save billing whenever it changes
+    useEffect(() => {
+        if (!fetchedRef.current || loading || !user) return;
+        localStorage.setItem("pos_billing", JSON.stringify(billing));
+        saveToDatabase(profile, billing, printer);
+    }, [billing]);
+
+    // Auto-save printer whenever it changes
+    useEffect(() => {
+        if (!fetchedRef.current || loading || !user) return;
+        localStorage.setItem("pos_printer_settings", JSON.stringify(printer));
+        saveToDatabase(profile, billing, printer);
+    }, [printer]);
 
     // Actions
     const updateProfile = (data: UserProfile) => setProfile(data);

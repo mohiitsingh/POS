@@ -127,10 +127,6 @@ export const TableProvider = ({ children }: { children: ReactNode }) => {
     const deleteTable = async (id: string) => {
         if (!user) throw new Error('User not authenticated');
 
-        if (!window.confirm("Are you sure you want to delete this table?")) {
-            return;
-        }
-
         try {
             const { error } = await supabase
                 .from('restaurant_tables')
