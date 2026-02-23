@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../config/supabase';
 import './EmailVerification.css';
 
 const EmailVerification = () => {
