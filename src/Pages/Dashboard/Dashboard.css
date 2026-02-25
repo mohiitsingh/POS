@@ -103,7 +103,7 @@
 }
 
 .dish-grid::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
 }
 .dish-grid::-webkit-scrollbar-thumb {
     background-color: rgba(0,0,0,0.1);
@@ -113,7 +113,6 @@
 .dish-card {
     background: white;
     border-radius: 12px;
-    overflow: hidden;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;

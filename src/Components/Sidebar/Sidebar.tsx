@@ -9,7 +9,7 @@ import {
     LogOut,
     TrendingUp,
 } from "lucide-react";
-import logo from "../../assets/logo.png"
+import logo from "/public/logo.png"
 import "./Sidebar.css";
 import { useAuth } from "../../Contexts/AuthContext";
 

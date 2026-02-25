@@ -93,7 +93,7 @@ const ProfileSettings = () => {
                         style={{ opacity: 0.55, cursor: 'not-allowed', background: 'var(--color-border, #e2e8f0)' }}
                     />
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light, #94a3b8)', marginTop: '4px', display: 'block' }}>
-                        Email is managed by your account and cannot be changed here.
+                        Email is managed by your account and cannot be changed.
                     </span>
                 </div>
                 <div className="form-group">

@@ -290,8 +290,8 @@
   background: transparent; 
 }
 
-.section-title {
-  font-size: 3rem;
+.app .section-title {
+  font-size: 3rem ;
   margin-bottom: 5rem;
   text-align: center;
   color: var(--color-text);
@@ -555,8 +555,8 @@
   color: var(--color-text-light);
   font-size: 0.875rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
-
 
 
 

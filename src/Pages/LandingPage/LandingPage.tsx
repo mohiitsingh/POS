@@ -9,7 +9,7 @@ import {
   Menu,
   ReceiptIndianRupee,
 } from "lucide-react";
-import logo from "../../assets/logo.png"
+import logo from "/public/logo.png"
 import "./LandingPage.css";
 
 const LandingPage = () => {
@@ -196,13 +196,8 @@ const LandingPage = () => {
         <div className="features-text">
           <h2
             className="section-title"
-            style={{
-              textAlign: "left",
-              marginBottom: "3rem",
-              fontSize: "3rem",
-            }}
           >
-            Track Everything, <br />
+            Track  Everything, 
             <span className="text-gradient">Effortlessly.</span>
           </h2>
           <div className="feature-list-cards">
