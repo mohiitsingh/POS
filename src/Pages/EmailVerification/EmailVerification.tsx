@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './EmailVerification.css';
 
+
 const EmailVerification = () => {
     const navigate = useNavigate();
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
@@ -18,11 +19,11 @@ const EmailVerification = () => {
                 if (type === 'signup' && accessToken) {
                     // Email is already verified by Supabase when user clicks the link
                     setStatus('success');
-                    setMessage('Email verified successfully! Redirecting to dashboard...');
+                    setMessage('Email verified successfully! Please log in to continue.');
 
-                    // Wait a moment to show success message, then redirect
+                    // Redirect to login — subscription gate handles the rest
                     setTimeout(() => {
-                        navigate('/dashboard', { replace: true });
+                        navigate('/login', { replace: true });
                     }, 2000);
                 } else {
                     setStatus('error');

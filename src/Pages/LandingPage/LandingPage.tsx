@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
@@ -9,13 +10,56 @@ import {
   Menu,
   ReceiptIndianRupee,
 } from "lucide-react";
-import logo from "/public/logo.png"
+import logo from "/logo.png"
 import "./LandingPage.css";
+
+interface Plan {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  badge_class: string;
+  price_per_month: number;
+  old_price: number | null;
+  discount_label: string | null;
+  total_label: string;
+  features: string[];
+}
+
+const CARD_CLASS: Record<string, string> = {
+  monthly: "basic",
+  sixmonths: "pro active-glow",
+  annual: "elite",
+};
+
+const BTN_CLASS: Record<string, string> = {
+  monthly: "btn-outline pricing-btn",
+  sixmonths: "btn-primary pricing-btn",
+  annual: "btn-primary-solid pricing-btn",
+};
+
+const BTN_LABEL: Record<string, string> = {
+  monthly: "Start Trial",
+  sixmonths: "Get Started",
+  annual: "Go Annual",
+};
 
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("plans")
+      .select("id, title, subtitle, badge, badge_class, price_per_month, old_price, discount_label, total_label, features")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (data) setPlans(data as Plan[]);
+      });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,17 +138,17 @@ const LandingPage = () => {
                 <div className="pos-body">
                   <div className="order-item">
                     <span>Cappuccino</span>
-                    <span>₹4.50</span>
+                    <span>₹40.00</span>
                   </div>
                   <div className="order-item">
-                    <span>Bagel</span>
-                    <span>₹3.00</span>
+                    <span>Brownie</span>
+                    <span>₹30.00</span>
                   </div>
                   <div className="order-item">
                     <span>Avocado Toast</span>
-                    <span>₹8.50</span>
+                    <span>₹80.00</span>
                   </div>
-                  <div className="pos-total-btn">Charge ₹16.00</div>
+                  <div className="pos-total-btn">Charge ₹150.00</div>
                 </div>
               </div>
 
@@ -194,10 +238,8 @@ const LandingPage = () => {
       {/* Features */}
       <section id="features" className="features-section">
         <div className="features-text">
-          <h2
-            className="section-title"
-          >
-            Track  Everything, 
+          <h2 className="section-title">
+            Track Everything,
             <span className="text-gradient">Effortlessly.</span>
           </h2>
           <div className="feature-list-cards">
@@ -322,86 +364,36 @@ const LandingPage = () => {
         </div>
 
         <div className="pricing-grid">
-          {/* Monthly Card */}
-          <div className="pricing-card basic">
-            <div className="card-badge">Flexible</div>
-            <h3>Monthly</h3>
-            <p>Perfect for testing the waters</p>
-            <div className="price-block">
-              <span className="currency">₹</span>
-              <span className="amount">999</span>
-              <span className="period">/mo</span>
+          {plans.map((plan) => (
+            <div key={plan.id} className={`pricing-card ${CARD_CLASS[plan.id] ?? "basic"}`}>
+              <div className={`card-badge ${plan.badge_class}`}>{plan.badge}</div>
+              {plan.discount_label && (
+                <div className="discount-pill">{plan.discount_label}</div>
+              )}
+              <h3>{plan.title}</h3>
+              <p>{plan.subtitle}</p>
+              <div className="price-block">
+                <span className="currency">₹</span>
+                <span className="amount">{plan.price_per_month}</span>
+                <span className="period">/mo</span>
+                {plan.old_price && (
+                  <span className="old-price">₹{plan.old_price}</span>
+                )}
+              </div>
+              <ul className="pricing-features">
+                {plan.features.map((f) => (
+                  <li key={f}><Check size={16} /> {f}</li>
+                ))}
+              </ul>
+              <button
+                className={BTN_CLASS[plan.id] ?? "btn-outline pricing-btn"}
+                style={{ width: "100%" }}
+                onClick={() => navigate("/login")}
+              >
+                {BTN_LABEL[plan.id] ?? "Get Started"}
+              </button>
             </div>
-            <ul className="pricing-features">
-              <li>
-                <Check size={16} /> All Features Included
-              </li>
-              <li>
-                <Check size={16} /> Max 500 Bills/mo
-              </li>
-              <li>
-                <Check size={16} /> Email Support
-              </li>
-            </ul>
-            <button className="btn-outline pricing-btn" onClick={() => navigate("/login")}>Start Trial</button>
-          </div>
-
-          {/* 6 Months Card */}
-          <div className="pricing-card pro active-glow">
-            <div className="card-badge popular">Most Popular</div>
-            <div className="discount-pill">Save 10%</div>
-            <h3>6 Months</h3>
-            <p>For growing cafes</p>
-            <div className="price-block">
-              <span className="currency">₹</span>
-              <span className="amount">899</span>
-              <span className="period">/mo</span>
-              <span className="old-price">₹999</span>
-            </div>
-            <ul className="pricing-features">
-              <li>
-                <Check size={16} /> All Monthly Features
-              </li>
-              <li>
-                <Check size={16} /> <strong>Unlimited</strong> Bills
-              </li>
-              <li>
-                <Check size={16} /> Priority Support
-              </li>
-            </ul>
-            <button className="btn-primary pricing-btn" onClick={() => navigate("/login")}>Get Started</button>
-          </div>
-
-          {/* 12 Months Card */}
-          <div className="pricing-card elite">
-            <div className="card-badge best-value">Best Value</div>
-            <div className="discount-pill">Save 30%</div>
-            <h3>12 Months</h3>
-            <p>Maximum savings for pros</p>
-            <div className="price-block">
-              <span className="currency">₹</span>
-              <span className="amount">699</span>
-              <span className="period">/mo</span>
-              <span className="old-price">₹999</span>
-            </div>
-            <ul className="pricing-features">
-              <li>
-                <Check size={16} /> Everything in 6 Months
-              </li>
-              <li>
-                <Check size={16} /> Dedicated Account Manager
-              </li>
-              <li>
-                <Check size={16} /> Free Layout Setup
-              </li>
-            </ul>
-            <button
-              className="btn-primary-solid pricing-btn"
-              style={{ width: "100%" }} onClick={() => navigate("/login")}
-            >
-              Go Annual
-            </button>
-          </div>
+          ))}
         </div>
 
         <p

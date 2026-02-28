@@ -25,7 +25,7 @@ const TableContext = createContext<TableContextType | undefined>(undefined);
 // --- Provider ---
 export const TableProvider = ({ children }: { children: ReactNode }) => {
     const { showError } = useToast();
-    const { user } = useAuth();
+    const { user, hasPaidSubscription } = useAuth();
     const [tables, setTables] = useState<Table[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -62,10 +62,15 @@ export const TableProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Load data when user changes
+    // Load data when user changes — only if they have an active subscription
     useEffect(() => {
+        if (!hasPaidSubscription) {
+            setTables([]);
+            setLoading(false);
+            return;
+        }
         fetchTables();
-    }, [user]);
+    }, [user, hasPaidSubscription]);
 
     const addTable = async (tableNo: string, status: 'active' | 'inactive') => {
         if (!user) throw new Error('User not authenticated');

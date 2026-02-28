@@ -76,7 +76,7 @@ const defaultPrinter: PrinterSettings = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-    const { user } = useAuth();
+    const { user, hasPaidSubscription } = useAuth();
     const [loading, setLoading] = useState(true);
 
     // Track whether we have finished the initial fetch — auto-saves must NOT run until then
@@ -116,14 +116,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Fetch settings from Supabase on login
+    // Fetch settings from Supabase on login — only if they have an active subscription
     useEffect(() => {
         const fetchSettings = async () => {
             // Reset fetch guard whenever user changes
             fetchedRef.current = false;
             setLoading(true);
 
-            if (!user) {
+            if (!user || !hasPaidSubscription) {
                 setLoading(false);
                 return;
             }
@@ -188,7 +188,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchSettings();
-    }, [user]);
+    }, [user, hasPaidSubscription]);
 
     // Auto-save profile whenever it changes — but ONLY after initial fetch is done
     useEffect(() => {

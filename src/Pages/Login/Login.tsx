@@ -1,20 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Login.css";
 import BrandingPanel from "../../Components/BrandingPanel/BrandingPanel";
 import { Link, useNavigate } from "react-router-dom";
 import { Chrome } from "lucide-react";
-import logo from "/public/logo.png";
+import logo from "/logo.png";
 import { useAuth } from "../../Contexts/AuthContext";
 import VerificationDialog from "../../Components/VerificationDialog/VerificationDialog";
-
-
 
 const Login = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, resendVerificationEmail } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resendVerificationEmail, hasPaidSubscription } = useAuth();
 
   // Form states
   const [formData, setFormData] = useState({
@@ -25,6 +23,14 @@ const Login = () => {
     rememberMe: false,
   });
 
+  // On mount: restore remembered email if present
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setFormData((prev) => ({ ...prev, email: savedEmail, rememberMe: true }));
+    }
+  }, []);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,7 +39,6 @@ const Login = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
-    // Clear error when user types
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
@@ -42,7 +47,6 @@ const Login = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
       newErrors.email = "Email is required";
@@ -50,7 +54,6 @@ const Login = () => {
       newErrors.email = "Invalid email format";
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
@@ -58,11 +61,9 @@ const Login = () => {
     }
 
     if (!isLoginMode) {
-      // Register mode validations
       if (!formData.fullName) {
         newErrors.fullName = "Full Name is required";
       }
-
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = "Passwords do not match";
       }
@@ -72,18 +73,6 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (validate()) {
-  //     // Mock API call
-  //     console.log("Form Submitted", formData);
-  //     // Simulate success
-  //     setTimeout(() => {
-  //       navigate("/dashboard"); // Redirect to dashboard (to be created or just mock)
-  //     }, 1000);
-  //   }
-  // };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -91,13 +80,23 @@ const Login = () => {
 
     try {
       if (isLoginMode) {
-        // Check if email is verified before allowing login
         try {
           await signIn(formData.email, formData.password);
-          navigate("/dashboard");
+
+          // Save or clear remembered email
+          if (formData.rememberMe) {
+            localStorage.setItem("rememberedEmail", formData.email);
+          } else {
+            localStorage.removeItem("rememberedEmail");
+          }
+
+          if (hasPaidSubscription) {
+            navigate("/dashboard");
+          } else {
+            navigate("/onboarding");
+          }
         } catch (error: any) {
-          // Check if error is due to unverified email
-          if (error.message?.includes('Email not confirmed')) {
+          if (error.message?.includes("Email not confirmed")) {
             setErrors({
               email: "Please verify your email before logging in. Check your inbox for the verification link.",
             });
@@ -113,24 +112,21 @@ const Login = () => {
           phone: "",
           role: "NA",
         });
-        // Show verification dialog after successful signup
         setRegisteredEmail(formData.email);
         setShowVerificationDialog(true);
       }
     } catch (error: any) {
       const message = error?.message || "Something went wrong";
-
-      setErrors({
-        email: message,
-      });
+      setErrors({ email: message });
     }
   };
-
 
   const handleCloseDialog = () => {
     setShowVerificationDialog(false);
     setIsLoginMode(true);
     setFormData({ ...formData, password: "", confirmPassword: "" });
+    // After email verification, user should log in — /onboarding route
+    // will handle the redirect automatically since they have no active subscription yet.
   };
 
   const handleResendEmail = async () => {
@@ -150,7 +146,6 @@ const Login = () => {
         <div className="auth-container">
           {/* Brand Logo */}
           <Link to="/" className="auth-logo">
-            {/* <span className="logo-icon">💠</span> Arambh POS */}
             <img src={logo} alt="Bill Easy" className="logo-icon" />
           </Link>
 
@@ -225,7 +220,9 @@ const Login = () => {
                     placeholder="••••••••"
                     className={errors.confirmPassword ? "error" : ""}
                   />
-                  {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+                  {errors.confirmPassword && (
+                    <span className="error-text">{errors.confirmPassword}</span>
+                  )}
                 </div>
               )}
 
@@ -260,7 +257,6 @@ const Login = () => {
                   <Chrome size={20} />
                   Google
                 </button>
-                {/* Optional Apple button if needed */}
               </div>
             </form>
 

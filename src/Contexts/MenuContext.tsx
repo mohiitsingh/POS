@@ -39,7 +39,7 @@ const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
 // --- Provider ---
 export const MenuProvider = ({ children }: { children: ReactNode }) => {
-    const { user } = useAuth();
+    const { user, hasPaidSubscription } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,8 +105,15 @@ export const MenuProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Load data when user changes
+    // Load data when user changes — only if they have an active subscription
     useEffect(() => {
+        if (!hasPaidSubscription) {
+            setCategories([]);
+            setMenuItems([]);
+            setLoading(false);
+            return;
+        }
+
         const loadData = async () => {
             setLoading(true);
             setError(null);
@@ -115,7 +122,7 @@ export const MenuProvider = ({ children }: { children: ReactNode }) => {
         };
 
         loadData();
-    }, [user]);
+    }, [user, hasPaidSubscription]);
 
     // --- Actions ---
 

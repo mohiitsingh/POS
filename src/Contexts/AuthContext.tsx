@@ -1,12 +1,53 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+
+// ─── Subscription cache helpers (localStorage, 30-min TTL) ──────────────────
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(userId: string) {
+    return `sub_cache_${userId}`;
+}
+
+function readSubscriptionCache(userId: string): boolean | null {
+    try {
+        const raw = localStorage.getItem(getCacheKey(userId));
+        if (!raw) return null;
+        const { value, expiresAt } = JSON.parse(raw) as { value: boolean; expiresAt: number };
+        if (Date.now() > expiresAt) {
+            localStorage.removeItem(getCacheKey(userId));
+            return null; // expired
+        }
+        return value;
+    } catch {
+        return null;
+    }
+}
+
+function writeSubscriptionCache(userId: string, value: boolean) {
+    try {
+        localStorage.setItem(
+            getCacheKey(userId),
+            JSON.stringify({ value, expiresAt: Date.now() + CACHE_TTL_MS })
+        );
+    } catch { /* storage full or unavailable — silently skip */ }
+}
+
+function clearSubscriptionCache(userId?: string) {
+    if (userId) {
+        localStorage.removeItem(getCacheKey(userId));
+    }
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 interface AuthContextType {
     user: User | null;
     session: Session | null;
     loading: boolean;
+    hasPaidSubscription: boolean;
+    subscriptionLoading: boolean;
+    refreshSubscription: () => Promise<void>;
     signUp: (email: string, password: string, metadata: UserMetadata) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
@@ -38,6 +79,58 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasPaidSubscription, setHasPaidSubscription] = useState(false);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+
+    const checkSubscription = useCallback(async (userId: string | undefined) => {
+        if (!userId) {
+            setHasPaidSubscription(false);
+            return;
+        }
+
+        // ── 1. Try the 30-minute localStorage cache first ─────────────────────
+        const cached = readSubscriptionCache(userId);
+        if (cached !== null) {
+            setHasPaidSubscription(cached);
+            return;
+        }
+
+        // ── 2. Cache miss or expired → fetch from Supabase ────────────────────
+        setSubscriptionLoading(true);
+        try {
+            // First: auto-expire any overdue subscriptions on the server side
+            await supabase.rpc('expire_stale_subscriptions', { p_user_id: userId });
+
+            // Then: check if an active, non-expired subscription exists
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .select('id, expires_at')
+                .eq('user_id', userId)
+                .eq('status', 'active')
+                .maybeSingle();
+
+            if (error) throw error;
+
+            // Double-guard: subscription must exist AND not be past expires_at
+            const hasSub = !!data && (
+                !data.expires_at || new Date(data.expires_at) > new Date()
+            );
+
+            setHasPaidSubscription(hasSub);
+            writeSubscriptionCache(userId, hasSub);
+        } catch (err) {
+            console.error('Subscription check failed:', err);
+            setHasPaidSubscription(false);
+        } finally {
+            setSubscriptionLoading(false);
+        }
+    }, []);
+
+    // Force-refresh: clears cache then re-fetches (used after payment)
+    const refreshSubscription = useCallback(async () => {
+        if (user?.id) clearSubscriptionCache(user.id);
+        await checkSubscription(user?.id);
+    }, [user?.id, checkSubscription]);
 
     useEffect(() => {
         // Get initial session
@@ -45,6 +138,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            checkSubscription(session?.user?.id);
         });
 
         // Listen for auth changes
@@ -54,13 +148,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
+            checkSubscription(session?.user?.id);
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    }, [checkSubscription]);
 
     const signUp = async (email: string, password: string, metadata: UserMetadata) => {
-        const {  error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -74,12 +169,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
 
         if (error) throw error;
-
-        // Note: User will need to verify email before they can log in
     };
 
     const signIn = async (email: string, password: string) => {
-        const {  error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
@@ -111,6 +204,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     const signOut = async () => {
+        if (user?.id) clearSubscriptionCache(user.id);
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     };
@@ -119,6 +213,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         user,
         session,
         loading,
+        hasPaidSubscription,
+        subscriptionLoading,
+        refreshSubscription,
         signUp,
         signIn,
         signInWithGoogle,

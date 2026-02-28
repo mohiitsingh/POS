@@ -1,7 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
 
-const ProtectedRoute = () => {
+/**
+ * OnboardingRoute – allows only logged-in users.
+ * If the user already has an active subscription, redirect to /dashboard.
+ * Otherwise render the Outlet (the onboarding page).
+ */
+const OnboardingRoute = () => {
     const { user, loading, hasPaidSubscription, subscriptionLoading } = useAuth();
 
     if (loading || subscriptionLoading) {
@@ -20,10 +25,9 @@ const ProtectedRoute = () => {
     }
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!hasPaidSubscription) return <Navigate to="/onboarding" replace />;
+    if (hasPaidSubscription) return <Navigate to="/dashboard" replace />;
 
     return <Outlet />;
 };
 
-export default ProtectedRoute;
-
+export default OnboardingRoute;

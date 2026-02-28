@@ -46,7 +46,7 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 // --- Provider ---
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
-    const { user } = useAuth();
+    const { user, hasPaidSubscription } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [drafts, setDrafts] = useState<Draft[]>([]);
     const [loading, setLoading] = useState(true);
@@ -123,8 +123,15 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Load data when user changes
+    // Load data when user changes — only if they have an active subscription
     useEffect(() => {
+        if (!hasPaidSubscription) {
+            setOrders([]);
+            setDrafts([]);
+            setLoading(false);
+            return;
+        }
+
         const loadData = async () => {
             setLoading(true);
             setError(null);
@@ -133,7 +140,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         };
 
         loadData();
-    }, [user]);
+    }, [user, hasPaidSubscription]);
 
     const addOrder = async (orderData: Omit<Order, 'id' | 'date'>) => {
         if (!user) throw new Error('User not authenticated');

@@ -1,0 +1,46 @@
+/* Floats above the OnboardingModal overlay (z-index: 9999) */
+.onboarding-topbar {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10000;
+}
+
+.onboarding-logout-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.1rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    border-radius: 99px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.onboarding-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-1px);
+}
+
+.onboarding-logout-btn:active {
+    transform: translateY(0);
+}
+
+/* On very small screens just show the icon */
+@media (max-width: 400px) {
+    .onboarding-logout-btn span {
+        display: none;
+    }
+
+    .onboarding-logout-btn {
+        padding: 0.55rem 0.75rem;
+    }
+}

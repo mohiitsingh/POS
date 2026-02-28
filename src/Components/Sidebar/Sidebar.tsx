@@ -9,7 +9,7 @@ import {
     LogOut,
     TrendingUp,
 } from "lucide-react";
-import logo from "/public/logo.png"
+import logo from "/logo.png"
 import "./Sidebar.css";
 import { useAuth } from "../../Contexts/AuthContext";
 
@@ -56,8 +56,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             <div className="sidebar-header">
                 <Link to="/dashboard" className="sidebar-brand" onClick={onClose}>
                     <div className="brand-logo">
+                        {/* <span className="logo-icon">💠</span> */}
                         <img src={logo} alt="Bill Easy" className="logo-img" />
                     </div>
+                    {!isCollapsed && <span className="brand-name">Arambh</span>}
                 </Link>
             </div>
 
