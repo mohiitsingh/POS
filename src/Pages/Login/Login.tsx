@@ -3,7 +3,7 @@ import "./Login.css";
 import BrandingPanel from "../../Components/BrandingPanel/BrandingPanel";
 import { Link, useNavigate } from "react-router-dom";
 import { Chrome } from "lucide-react";
-import logo from "/logo.png";
+import logo from "/public/logo.png";
 import { useAuth } from "../../Contexts/AuthContext";
 import VerificationDialog from "../../Components/VerificationDialog/VerificationDialog";
 

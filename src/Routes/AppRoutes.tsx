@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Login from "../Pages/Login/Login";
 import LandingPage from "../Pages/LandingPage/LandingPage";
 import DashboardLayout from "../Layouts/DashboardLayout/DashboardLayout";
@@ -12,10 +12,28 @@ import ProtectedRoute from "../Components/ProtectedRoute";
 import OnboardingRoute from "../Components/OnboardingRoute";
 import PublicRoute from "../Components/PublicRoute";
 import EmailVerification from "../Pages/EmailVerification/EmailVerification";
-import Onboarding from '../Pages/OnBoarding/OnBoarding';
+import Onboarding from "../Pages/OnBoarding/OnBoarding";
 import PaymentPage from "../Pages/Payment/Payment";
 import AdminRoute from "../Components/AdminRoute";
 import AdminPage from "../Pages/Admin/Admin";
+import { MenuProvider } from "../Contexts/MenuContext";
+import { OrderProvider } from "../Contexts/OrderContext";
+import { TableProvider } from "../Contexts/TableContext";
+
+/**
+ * SubscribedProviders — mounts data providers ONLY for authenticated + subscribed users.
+ * This prevents API calls to menu_items, orders, drafts, and restaurant_tables
+ * from firing on the onboarding, payment, or admin pages.
+ */
+const SubscribedProviders = () => (
+  <MenuProvider>
+    <TableProvider>
+      <OrderProvider>
+        <Outlet />
+      </OrderProvider>
+    </TableProvider>
+  </MenuProvider>
+);
 
 const AppRoutes = () => {
   return (
@@ -37,13 +55,15 @@ const AppRoutes = () => {
 
       {/* Authenticated + Subscribed Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/menu-management" element={<MenuManagement />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/orders" element={<OrdersHistory />} />
-          <Route path="/tables" element={<TableManagement />} />
-          <Route path="/settings" element={<Settings />} />
+        <Route element={<SubscribedProviders />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/menu-management" element={<MenuManagement />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/orders" element={<OrdersHistory />} />
+            <Route path="/tables" element={<TableManagement />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
         </Route>
       </Route>
 
