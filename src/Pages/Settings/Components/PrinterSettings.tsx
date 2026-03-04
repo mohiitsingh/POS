@@ -21,7 +21,7 @@ function clearCache() { sessionStorage.removeItem(CACHE_KEY); }
 const PrinterSettings = () => {
     const { printer, updatePrinter, billing } = useSettings();
     const { orders } = useOrders();
-    const { showSuccess, showWarning, showError } = useToast();
+    const { showSuccess, showWarning } = useToast();
 
     const [formData, setFormData] = useState(printer);
     const [serviceOnline, setServiceOnline] = useState<boolean | null>(null); // null = checking
