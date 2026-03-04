@@ -27,6 +27,7 @@ export interface BillingSettings {
 export interface PrinterSettings {
     billPrinter: string;
     kotPrinter: string;
+    kotOnBillPrinter: boolean; // print KOT on bill printer when only one printer
     paperSize: '58mm' | '80mm';
     showLogo: boolean;
     fontSize: 'small' | 'medium' | 'large';
@@ -67,6 +68,7 @@ const defaultBilling: BillingSettings = {
 const defaultPrinter: PrinterSettings = {
     billPrinter: '',
     kotPrinter: '',
+    kotOnBillPrinter: false,
     paperSize: '80mm',
     showLogo: false,
     fontSize: 'medium'
@@ -76,7 +78,7 @@ const defaultPrinter: PrinterSettings = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-    const { user, hasPaidSubscription } = useAuth();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
 
     // Track whether we have finished the initial fetch — auto-saves must NOT run until then
@@ -116,14 +118,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    // Fetch settings from Supabase on login — only if they have an active subscription
+    // Fetch settings from Supabase on login
     useEffect(() => {
         const fetchSettings = async () => {
             // Reset fetch guard whenever user changes
             fetchedRef.current = false;
             setLoading(true);
 
-            if (!user || !hasPaidSubscription) {
+            if (!user) {
                 setLoading(false);
                 return;
             }
@@ -188,7 +190,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchSettings();
-    }, [user, hasPaidSubscription]);
+    }, [user]);
 
     // Auto-save profile whenever it changes — but ONLY after initial fetch is done
     useEffect(() => {

@@ -1,3 +1,89 @@
+/**
+ * printBill.ts
+ *
+ * Printing strategy:
+ *  1. Try ArambhPrinterService (ws://localhost:9120) → silent, no popup
+ *  2. If service unavailable → fall back to browser window.print() dialog
+ */
+
+// ─── Service Communication ────────────────────────────────────────────────────
+
+const SERVICE_URL = 'ws://localhost:9120';
+const CONNECT_TIMEOUT_MS = 1500; // how long to wait for service before falling back
+
+/** Returns a short-lived WebSocket connected to ArambhPrinterService, or null on failure */
+function connectToService(): Promise<WebSocket | null> {
+    return new Promise((resolve) => {
+        const ws = new WebSocket(SERVICE_URL);
+        const timer = setTimeout(() => {
+            ws.close();
+            resolve(null);
+        }, CONNECT_TIMEOUT_MS);
+
+        ws.onopen = () => {
+            clearTimeout(timer);
+            resolve(ws);
+        };
+        ws.onerror = () => {
+            clearTimeout(timer);
+            resolve(null);
+        };
+    });
+}
+
+/** Sends a print action to the service and waits for acknowledgement */
+function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(false), 15000);
+        ws.onmessage = (evt) => {
+            clearTimeout(timer);
+            try {
+                const res = JSON.parse(evt.data as string);
+                resolve(res.success === true);
+            } catch { resolve(false); }
+        };
+        ws.send(JSON.stringify(payload));
+    });
+}
+
+/**
+ * Fetches the list of installed printers from ArambhPrinterService.
+ * Returns empty array if service is not running.
+ */
+export async function getServicePrinters(): Promise<string[]> {
+    const ws = await connectToService();
+    if (!ws) return [];
+    try {
+        return await new Promise<string[]>((resolve) => {
+            const timer = setTimeout(() => { ws.close(); resolve([]); }, 5000);
+            ws.onmessage = (evt) => {
+                clearTimeout(timer);
+                try {
+                    const res = JSON.parse(evt.data as string);
+                    resolve(res.printers || []);
+                } catch { resolve([]); }
+                ws.close();
+            };
+            ws.send(JSON.stringify({ action: 'list-printers' }));
+        });
+    } catch { return []; }
+}
+
+/**
+ * Checks if ArambhPrinterService is running.
+ */
+export async function isServiceRunning(): Promise<boolean> {
+    const ws = await connectToService();
+    if (!ws) return false;
+    try {
+        const ok = await sendToPrinter(ws, { action: 'ping' });
+        ws.close();
+        return ok;
+    } catch { return false; }
+}
+
+// ─── HTML Generation ──────────────────────────────────────────────────────────
+
 export interface BillPrintData {
     businessName: string;
     businessAddress: string;
@@ -15,8 +101,8 @@ export interface BillPrintData {
     discount: number;
     taxLabel: string;  // e.g. "Tax (5%)" or "Tax (Fixed)"
     taxAmount: number;
-    roundOff: number;  // positive means added, negative means subtracted
-    grandTotal: number; // already rounded integer
+    roundOff: number;
+    grandTotal: number;
     paperSize: '58mm' | '80mm';
     fontSize: 'small' | 'medium' | 'large';
 }
@@ -38,11 +124,11 @@ function shortId(id: string): string {
     return '#' + id.slice(0, 8).toUpperCase();
 }
 
-export function printBill(data: BillPrintData): void {
+function buildBillHtml(data: BillPrintData): string {
     const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
+    const contentWidth = data.paperSize === '58mm' ? '46mm' : '72mm'; // safe printable width
     const fs = fontSizeMap[data.fontSize];
 
-    // Build items rows
     const itemRows = data.items.map((item, idx) => {
         const amount = item.price * item.quantity;
         return `
@@ -57,18 +143,20 @@ export function printBill(data: BillPrintData): void {
 
     const hr = `<div style="border-top:1px dashed #000;margin:6px 0;"></div>`;
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Bill ${shortId(data.orderId)}</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; word-wrap: break-word; }
   body {
     font-family: 'Courier New', monospace;
     font-size: ${fs};
-    width: ${pageWidth};
-    padding: 8px;
+    width: ${contentWidth}; /* strictly constrain to printable area */
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 8px 0;
     color: #000;
     background: #fff;
   }
@@ -83,7 +171,7 @@ export function printBill(data: BillPrintData): void {
   .total-row   { font-weight: bold; font-size: calc(${fs} + 2px); border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }
   @media print {
     @page { margin: 0; size: ${pageWidth} auto; }
-    body  { padding: 4px; }
+    body  { margin: 0 auto; padding: 4px 0; }
   }
 </style>
 </head>
@@ -137,24 +225,9 @@ ${hr}
 
 </body>
 </html>`;
-
-    const w = window.open('', '_blank', 'width=400,height=600');
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    // Give styles time to load before printing
-    w.onload = () => {
-        w.focus();
-        w.print();
-    };
-    // Fallback if onload doesn't fire (already loaded)
-    setTimeout(() => {
-        try { w.focus(); w.print(); } catch { /* already printed */ }
-    }, 400);
 }
 
-// ─── KOT ────────────────────────────────────────────────────────────────────
+// ─── KOT ─────────────────────────────────────────────────────────────────────
 
 export interface KOTData {
     tokenNumber: number;
@@ -165,22 +238,11 @@ export interface KOTData {
     fontSize: 'small' | 'medium' | 'large';
 }
 
-function openPrintWindow(html: string): void {
-    const w = window.open('', '_blank', 'width=400,height=500');
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.onload = () => { w.focus(); w.print(); };
-    setTimeout(() => {
-        try { w.focus(); w.print(); } catch { /* already printed */ }
-    }, 400);
-}
-
-export function printKOT(data: KOTData): void {
+function buildKOTHtml(data: KOTData): string {
     const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
-    const fontSizeMap = { small: '11px', medium: '13px', large: '15px' };
-    const fs = fontSizeMap[data.fontSize];
+    const contentWidth = data.paperSize === '58mm' ? '46mm' : '72mm'; // safe printable width
+    const fontMap = { small: '11px', medium: '13px', large: '15px' };
+    const fs = fontMap[data.fontSize];
 
     const itemRows = data.items.map((item, idx) => `
         <tr>
@@ -191,18 +253,20 @@ export function printKOT(data: KOTData): void {
 
     const hr = `<div style="border-top:1px dashed #000;margin:6px 0;"></div>`;
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>KOT - Token ${data.tokenNumber}</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; word-wrap: break-word; }
   body {
     font-family: 'Courier New', monospace;
     font-size: ${fs};
-    width: ${pageWidth};
-    padding: 8px;
+    width: ${contentWidth}; /* strictly constrain to printable area */
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 8px 0;
     color: #000;
     background: #fff;
   }
@@ -213,7 +277,7 @@ export function printKOT(data: KOTData): void {
   td      { vertical-align: middle; }
   @media print {
     @page { margin: 0; size: ${pageWidth} auto; }
-    body  { padding: 4px; }
+    body  { margin: 0 auto; padding: 4px 0; }
   }
 </style>
 </head>
@@ -250,7 +314,62 @@ ${hr}
 
 </body>
 </html>`;
+}
 
+// ─── Browser Fallback (original behavior) ────────────────────────────────────
+
+function openPrintWindow(html: string): void {
+    const w = window.open('', '_blank', 'width=400,height=600');
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.onload = () => { w.focus(); w.print(); };
+    setTimeout(() => {
+        try { w.focus(); w.print(); } catch { /* already printed */ }
+    }, 400);
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Prints a bill — silently via ArambhPrinterService if running, else browser dialog.
+ * @param data       Bill data
+ * @param printerName  Name of printer from service (pass empty string to use browser fallback)
+ */
+export async function printBill(data: BillPrintData, printerName?: string): Promise<void> {
+    const html = buildBillHtml(data);
+
+    if (printerName && printerName.trim()) {
+        const ws = await connectToService();
+        if (ws) {
+            const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html });
+            ws.close();
+            if (ok) return; // ✅ Printed silently
+        }
+    }
+
+    // Fallback: browser print dialog
     openPrintWindow(html);
 }
 
+/**
+ * Prints a KOT — silently via ArambhPrinterService if running, else browser dialog.
+ * @param data         KOT data
+ * @param printerName  Name of KOT printer (or bill printer if kotOnBillPrinter is true)
+ */
+export async function printKOT(data: KOTData, printerName?: string): Promise<void> {
+    const html = buildKOTHtml(data);
+
+    if (printerName && printerName.trim()) {
+        const ws = await connectToService();
+        if (ws) {
+            const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html });
+            ws.close();
+            if (ok) return; // ✅ Printed silently
+        }
+    }
+
+    // Fallback: browser print dialog
+    openPrintWindow(html);
+}
