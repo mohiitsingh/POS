@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../config/supabase";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import {
   Check,
   ArrowRight,
@@ -74,6 +75,14 @@ const LandingPage = () => {
   };
   return (
     <div className="app">
+       <Helmet>
+        <title>Arambh POS | Smart Billing Software for Restaurants & Cafes</title>
+        <meta
+          name="description"
+          content="Arambh POS helps small restaurants, cafes and food shops manage billing, orders and daily operations easily."
+        />
+      </Helmet>
+
       {/* Hero Container (Wrapper including Navbar) */}
       <div className="hero-wrapper">
         <nav className={`navbar-floating ${scrolled ? "scrolled" : ""}`}>
@@ -489,7 +498,7 @@ const LandingPage = () => {
           <img src={logo} alt="Bill Easy" className="logo-img" />
         </div>
         <div className="footer-links">
-          <span>&copy; 2026 Bill Easy</span>
+          <span>&copy; 2026 Arambh</span>
           <a href="#">Support</a>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>

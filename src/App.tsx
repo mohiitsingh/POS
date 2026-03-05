@@ -4,6 +4,7 @@ import { SettingsProvider } from "./Contexts/SettingsContext";
 import { AuthProvider } from "./Contexts/AuthContext";
 import { ToastProvider } from "./Contexts/ToastContext";
 
+
 function App() {
   return (
     <ToastProvider>
