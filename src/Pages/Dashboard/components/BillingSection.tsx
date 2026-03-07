@@ -122,7 +122,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
         const roundOff = grandTotal - rawTotal;
         const tokenNumber = getNextToken();
 
-        printBill({
+        const billPrinted = await printBill({
             businessName: billing.businessName,
             businessAddress: billing.businessAdresss,
             businessPhone: billing.businessPhone,
@@ -145,10 +145,15 @@ const BillingSection: React.FC<BillingSectionProps> = ({
             grandTotal,
             paperSize: printer.paperSize,
             fontSize: printer.fontSize,
-        });
+        }, printer.billPrinter);
+
+        if (!billPrinted) {
+            showWarning('Bill not printed. Make sure the Arambh Printer Service is running and a Bill Printer is selected in Settings.');
+        }
 
         // --- KOT Print (if KOT printer is configured) ---
-        if (printer.kotPrinter.trim()) {
+        const effectiveKOTPrinter = printer.kotOnBillPrinter ? printer.billPrinter : printer.kotPrinter;
+        if (effectiveKOTPrinter.trim()) {
             printKOT({
                 tokenNumber,
                 diningType,
@@ -156,11 +161,12 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                 items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
                 paperSize: printer.paperSize,
                 fontSize: printer.fontSize,
-            });
+            }, effectiveKOTPrinter);
         }
 
         onLoadCart([]);
         showSuccess("Order placed successfully!");
+
     };
 
     return (

@@ -21,7 +21,7 @@ function clearCache() { sessionStorage.removeItem(CACHE_KEY); }
 const PrinterSettings = () => {
     const { printer, updatePrinter, billing } = useSettings();
     const { orders } = useOrders();
-    const { showSuccess, showWarning } = useToast();
+    const { showSuccess, showWarning, showError } = useToast();
 
     const [formData, setFormData] = useState(printer);
     const [serviceOnline, setServiceOnline] = useState<boolean | null>(null); // null = checking
@@ -137,11 +137,13 @@ const PrinterSettings = () => {
     };
 
     const handleTestPrint = async () => {
-        await printBill(buildSampleBillData(), formData.billPrinter);
+        const ok = await printBill(buildSampleBillData(), formData.billPrinter);
+        if (ok) showSuccess('Test bill sent to printer!');
+        else showError('Print failed. Make sure the Arambh Printer Service is running and a Bill Printer is selected.');
     };
 
     const handleTestKOT = async () => {
-        await printKOT({
+        const ok = await printKOT({
             tokenNumber: 1,
             diningType: 'Dine In',
             tableNo: 'T1',
@@ -153,6 +155,8 @@ const PrinterSettings = () => {
             paperSize: formData.paperSize,
             fontSize: formData.fontSize,
         }, effectiveKOTPrinter);
+        if (ok) showSuccess('Test KOT sent to printer!');
+        else showError('KOT print failed. Make sure the Arambh Printer Service is running and a KOT Printer is selected.');
     };
 
     const handleReprintLast = async () => {
@@ -173,7 +177,7 @@ const PrinterSettings = () => {
         const grandTotal = Math.round(rawTotal);
         const roundOff = grandTotal - rawTotal;
 
-        await printBill({
+        const ok = await printBill({
             businessName: billing.businessName,
             businessAddress: billing.businessAdresss,
             businessPhone: billing.businessPhone || '',
@@ -197,6 +201,8 @@ const PrinterSettings = () => {
             paperSize: formData.paperSize,
             fontSize: formData.fontSize,
         }, formData.billPrinter);
+        if (ok) showSuccess('Last bill reprinted successfully!');
+        else showError('Reprint failed. Make sure the Arambh Printer Service is running and a Bill Printer is selected.');
     };
 
     // ─── Printer selector component ───────────────────────────────────────────

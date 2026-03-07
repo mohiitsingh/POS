@@ -316,60 +316,38 @@ ${hr}
 </html>`;
 }
 
-// ─── Browser Fallback (original behavior) ────────────────────────────────────
-
-function openPrintWindow(html: string): void {
-    const w = window.open('', '_blank', 'width=400,height=600');
-    if (!w) return;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.onload = () => { w.focus(); w.print(); };
-    setTimeout(() => {
-        try { w.focus(); w.print(); } catch { /* already printed */ }
-    }, 400);
-}
-
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Prints a bill — silently via ArambhPrinterService if running, else browser dialog.
- * @param data       Bill data
- * @param printerName  Name of printer from service (pass empty string to use browser fallback)
+ * Prints a bill silently via ArambhPrinterService.
+ * Returns true if printed successfully, false if service is unavailable or no printer configured.
+ * Never opens the browser print dialog.
  */
-export async function printBill(data: BillPrintData, printerName?: string): Promise<void> {
+export async function printBill(data: BillPrintData, printerName?: string): Promise<boolean> {
+    if (!printerName || !printerName.trim()) return false;
+
     const html = buildBillHtml(data);
+    const ws = await connectToService();
+    if (!ws) return false;
 
-    if (printerName && printerName.trim()) {
-        const ws = await connectToService();
-        if (ws) {
-            const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html });
-            ws.close();
-            if (ok) return; // ✅ Printed silently
-        }
-    }
-
-    // Fallback: browser print dialog
-    openPrintWindow(html);
+    const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html });
+    ws.close();
+    return ok;
 }
 
 /**
- * Prints a KOT — silently via ArambhPrinterService if running, else browser dialog.
- * @param data         KOT data
- * @param printerName  Name of KOT printer (or bill printer if kotOnBillPrinter is true)
+ * Prints a KOT silently via ArambhPrinterService.
+ * Returns true if printed successfully, false if service is unavailable or no printer configured.
+ * Never opens the browser print dialog.
  */
-export async function printKOT(data: KOTData, printerName?: string): Promise<void> {
+export async function printKOT(data: KOTData, printerName?: string): Promise<boolean> {
+    if (!printerName || !printerName.trim()) return false;
+
     const html = buildKOTHtml(data);
+    const ws = await connectToService();
+    if (!ws) return false;
 
-    if (printerName && printerName.trim()) {
-        const ws = await connectToService();
-        if (ws) {
-            const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html });
-            ws.close();
-            if (ok) return; // ✅ Printed silently
-        }
-    }
-
-    // Fallback: browser print dialog
-    openPrintWindow(html);
+    const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html });
+    ws.close();
+    return ok;
 }
