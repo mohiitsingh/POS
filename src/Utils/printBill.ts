@@ -35,31 +35,18 @@ function connectToService(): Promise<WebSocket | null> {
     });
 }
 
-/** Sends a print action to the service and waits for acknowledgement */
+/** Sends a print action to the service (fire-and-forget — service does not send a response) */
 function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
     return new Promise((resolve) => {
-        console.log('[ArambhPrint] Sending payload:', JSON.stringify(payload).slice(0, 200));
-        // Timeout = service didn't respond at all → treat as failure
-        const timer = setTimeout(() => {
-            console.warn('[ArambhPrint] No response from service after 15s — timeout');
-            resolve(false);
-        }, 15000);
-        ws.onmessage = (evt) => {
-            // Any response from the service means it received and processed the job
-            clearTimeout(timer);
-            console.log('[ArambhPrint] Service response received ✅:', evt.data);
-            resolve(true);
-        };
         ws.onerror = (err) => {
-            clearTimeout(timer);
             console.error('[ArambhPrint] Error after send ❌:', err);
             resolve(false);
         };
         try {
             ws.send(JSON.stringify(payload));
-            console.log('[ArambhPrint] Payload sent, waiting for response...');
+            console.log('[ArambhPrint] Payload sent ✅ (fire-and-forget)');
+            resolve(true); // Service received the job — it won't reply, so resolve immediately
         } catch (e) {
-            clearTimeout(timer);
             console.error('[ArambhPrint] ws.send threw an error ❌:', e);
             resolve(false);
         }
