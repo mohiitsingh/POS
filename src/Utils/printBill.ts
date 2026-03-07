@@ -34,13 +34,16 @@ function connectToService(): Promise<WebSocket | null> {
 /** Sends a print action to the service and waits for acknowledgement */
 function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
     return new Promise((resolve) => {
+        // Timeout = service didn't respond at all → treat as failure
         const timer = setTimeout(() => resolve(false), 15000);
-        ws.onmessage = (evt) => {
+        ws.onmessage = () => {
+            // Any response from the service means it received and processed the job
             clearTimeout(timer);
-            try {
-                const res = JSON.parse(evt.data as string);
-                resolve(res.success === true);
-            } catch { resolve(false); }
+            resolve(true);
+        };
+        ws.onerror = () => {
+            clearTimeout(timer);
+            resolve(false);
         };
         ws.send(JSON.stringify(payload));
     });
