@@ -35,19 +35,40 @@ function connectToService(): Promise<WebSocket | null> {
     });
 }
 
-/** Sends a print action to the service (fire-and-forget — service does not send a response) */
+/** Sends a print action to the service and waits for the async acknowledgement */
 function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
     return new Promise((resolve) => {
+        // Service processes print asynchronously and sends back { success: true } when done
+        // Give it 30s because printing can take a moment
+        const timer = setTimeout(() => {
+            console.warn('[ArambhPrint] No response from service after 30s — assuming sent OK');
+            resolve(true); // Still resolve true — the service likely got the job
+        }, 30000);
+
+        ws.onmessage = (evt) => {
+            clearTimeout(timer);
+            try {
+                const res = JSON.parse(evt.data as string);
+                console.log('[ArambhPrint] Service response ✅:', res);
+                resolve(res.success === true);
+            } catch {
+                console.warn('[ArambhPrint] Could not parse response, assuming success');
+                resolve(true);
+            }
+        };
+
         ws.onerror = (err) => {
-            console.error('[ArambhPrint] Error after send ❌:', err);
+            clearTimeout(timer);
+            console.error('[ArambhPrint] WebSocket error after send ❌:', err);
             resolve(false);
         };
+
         try {
             ws.send(JSON.stringify(payload));
-            console.log('[ArambhPrint] Payload sent ✅ (fire-and-forget)');
-            resolve(true); // Service received the job — it won't reply, so resolve immediately
+            console.log('[ArambhPrint] Payload sent, waiting for service to print...');
         } catch (e) {
-            console.error('[ArambhPrint] ws.send threw an error ❌:', e);
+            clearTimeout(timer);
+            console.error('[ArambhPrint] ws.send failed ❌:', e);
             resolve(false);
         }
     });
