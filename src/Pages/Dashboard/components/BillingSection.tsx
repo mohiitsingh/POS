@@ -151,22 +151,32 @@ const BillingSection: React.FC<BillingSectionProps> = ({
             showWarning('Bill not printed. Make sure the Arambh Printer Service is running and a Bill Printer is selected in Settings.');
         }
 
-        // --- KOT Print (if KOT printer is configured) ---
-        const effectiveKOTPrinter = printer.kotOnBillPrinter ? printer.billPrinter : printer.kotPrinter;
-        if (effectiveKOTPrinter.trim()) {
-            printKOT({
-                tokenNumber,
-                diningType,
-                tableNo: diningType === 'Dine In' ? selectedTable : undefined,
-                items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
-                paperSize: printer.paperSize,
-                fontSize: printer.fontSize,
-            }, effectiveKOTPrinter);
-        }
-
         onLoadCart([]);
         showSuccess("Order placed successfully!");
 
+    };
+
+    const handlePrintKOT = async () => {
+        if (cart.length === 0) {
+            showWarning('Cart is empty. Nothing to print KOT for.');
+            return;
+        }
+        const effectiveKOTPrinter = printer.kotOnBillPrinter ? printer.billPrinter : printer.kotPrinter;
+        if (!effectiveKOTPrinter.trim()) {
+            showWarning('No KOT printer configured. Please select one in Settings → Printer.');
+            return;
+        }
+        const tokenNumber = getNextToken();
+        const kotPrinted = await printKOT({
+            tokenNumber,
+            diningType,
+            tableNo: diningType === 'Dine In' ? selectedTable : undefined,
+            items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
+            paperSize: printer.paperSize,
+            fontSize: printer.fontSize,
+        }, effectiveKOTPrinter);
+        if (kotPrinted) showSuccess('KOT sent to printer!');
+        else showWarning('KOT not printed. Make sure the Arambh Printer Service is running and a KOT Printer is selected in Settings.');
     };
 
     return (
@@ -312,11 +322,23 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                     </button>
                 </div>
 
-                {/* Final Action */}
-                <button className="print-btn" disabled={cart.length === 0} onClick={handlePlaceOrder}>
-                    <Printer size={18} />
-                    Place Order & Print
-                </button>
+                {/* Final Actions */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="print-btn" disabled={cart.length === 0} onClick={handlePlaceOrder} style={{ flex: 1 }}>
+                        <Printer size={18} />
+                        Place Order &amp; Print
+                    </button>
+                    <button
+                        className="print-btn"
+                        disabled={cart.length === 0}
+                        onClick={handlePrintKOT}
+                        style={{ flex: '0 0 auto', background: 'linear-gradient(135deg, #f59e0b, #d97706)', fontSize: '0.82rem', padding: '0 1rem' }}
+                        title="Print KOT only (no bill)"
+                    >
+                        <FileText size={16} />
+                        KOT
+                    </button>
+                </div>
             </div >
         </div >
     );

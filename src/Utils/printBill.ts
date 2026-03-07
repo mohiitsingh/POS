@@ -14,18 +14,22 @@ const CONNECT_TIMEOUT_MS = 1500; // how long to wait for service before falling 
 /** Returns a short-lived WebSocket connected to ArambhPrinterService, or null on failure */
 function connectToService(): Promise<WebSocket | null> {
     return new Promise((resolve) => {
+        console.log('[ArambhPrint] Connecting to', SERVICE_URL);
         const ws = new WebSocket(SERVICE_URL);
         const timer = setTimeout(() => {
+            console.warn('[ArambhPrint] Connection timed out after', CONNECT_TIMEOUT_MS, 'ms');
             ws.close();
             resolve(null);
         }, CONNECT_TIMEOUT_MS);
 
         ws.onopen = () => {
             clearTimeout(timer);
+            console.log('[ArambhPrint] WebSocket connected ✅');
             resolve(ws);
         };
-        ws.onerror = () => {
+        ws.onerror = (err) => {
             clearTimeout(timer);
+            console.error('[ArambhPrint] WebSocket connection error ❌', err);
             resolve(null);
         };
     });
@@ -34,18 +38,31 @@ function connectToService(): Promise<WebSocket | null> {
 /** Sends a print action to the service and waits for acknowledgement */
 function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
     return new Promise((resolve) => {
+        console.log('[ArambhPrint] Sending payload:', JSON.stringify(payload).slice(0, 200));
         // Timeout = service didn't respond at all → treat as failure
-        const timer = setTimeout(() => resolve(false), 15000);
-        ws.onmessage = () => {
+        const timer = setTimeout(() => {
+            console.warn('[ArambhPrint] No response from service after 15s — timeout');
+            resolve(false);
+        }, 15000);
+        ws.onmessage = (evt) => {
             // Any response from the service means it received and processed the job
             clearTimeout(timer);
+            console.log('[ArambhPrint] Service response received ✅:', evt.data);
             resolve(true);
         };
-        ws.onerror = () => {
+        ws.onerror = (err) => {
             clearTimeout(timer);
+            console.error('[ArambhPrint] Error after send ❌:', err);
             resolve(false);
         };
-        ws.send(JSON.stringify(payload));
+        try {
+            ws.send(JSON.stringify(payload));
+            console.log('[ArambhPrint] Payload sent, waiting for response...');
+        } catch (e) {
+            clearTimeout(timer);
+            console.error('[ArambhPrint] ws.send threw an error ❌:', e);
+            resolve(false);
+        }
     });
 }
 
@@ -327,14 +344,22 @@ ${hr}
  * Never opens the browser print dialog.
  */
 export async function printBill(data: BillPrintData, printerName?: string): Promise<boolean> {
-    if (!printerName || !printerName.trim()) return false;
+    console.log('[ArambhPrint] printBill called. printerName:', printerName);
+    if (!printerName || !printerName.trim()) {
+        console.warn('[ArambhPrint] No printer name provided — aborting');
+        return false;
+    }
 
     const html = buildBillHtml(data);
     const ws = await connectToService();
-    if (!ws) return false;
+    if (!ws) {
+        console.error('[ArambhPrint] Could not connect to service — printBill returning false');
+        return false;
+    }
 
     const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html });
     ws.close();
+    console.log('[ArambhPrint] printBill result:', ok);
     return ok;
 }
 
@@ -344,13 +369,21 @@ export async function printBill(data: BillPrintData, printerName?: string): Prom
  * Never opens the browser print dialog.
  */
 export async function printKOT(data: KOTData, printerName?: string): Promise<boolean> {
-    if (!printerName || !printerName.trim()) return false;
+    console.log('[ArambhPrint] printKOT called. printerName:', printerName);
+    if (!printerName || !printerName.trim()) {
+        console.warn('[ArambhPrint] No KOT printer name provided — aborting');
+        return false;
+    }
 
     const html = buildKOTHtml(data);
     const ws = await connectToService();
-    if (!ws) return false;
+    if (!ws) {
+        console.error('[ArambhPrint] Could not connect to service — printKOT returning false');
+        return false;
+    }
 
     const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html });
     ws.close();
+    console.log('[ArambhPrint] printKOT result:', ok);
     return ok;
 }
