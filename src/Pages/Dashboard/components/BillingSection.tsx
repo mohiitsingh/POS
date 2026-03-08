@@ -145,18 +145,22 @@ const BillingSection: React.FC<BillingSectionProps> = ({
             grandTotal,
             paperSize: printer.paperSize,
             fontSize: printer.fontSize,
-        });
+        }, printer.billPrinter);
 
-        // --- KOT Print (if KOT printer is configured) ---
-        if (printer.kotPrinter.trim()) {
-            printKOT({
-                tokenNumber,
-                diningType,
-                tableNo: diningType === 'Dine In' ? selectedTable : undefined,
-                items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
-                paperSize: printer.paperSize,
-                fontSize: printer.fontSize,
-            });
+        const kotData = {
+            tokenNumber,
+            diningType,
+            tableNo: diningType === 'Dine In' ? selectedTable : undefined,
+            items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
+            paperSize: printer.paperSize,
+            fontSize: printer.fontSize,
+        };
+
+        // --- KOT Print ---
+        if (printer.kotOnBillPrinter) {
+            printKOT(kotData, printer.billPrinter);
+        } else if (printer.kotPrinter.trim()) {
+            printKOT(kotData, printer.kotPrinter);
         }
 
         onLoadCart([]);

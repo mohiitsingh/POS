@@ -8,7 +8,7 @@
 
 // ─── Service Communication ────────────────────────────────────────────────────
 
-const SERVICE_URL = 'ws://localhost:9120';
+const SERVICE_URL = 'ws://127.0.0.1:9120';
 const CONNECT_TIMEOUT_MS = 1500; // how long to wait for service before falling back
 
 /** Returns a short-lived WebSocket connected to ArambhPrinterService, or null on failure */
@@ -34,7 +34,7 @@ function connectToService(): Promise<WebSocket | null> {
 /** Sends a print action to the service and waits for acknowledgement */
 function sendToPrinter(ws: WebSocket, payload: object): Promise<boolean> {
     return new Promise((resolve) => {
-        const timer = setTimeout(() => resolve(false), 15000);
+        const timer = setTimeout(() => resolve(false), 60000);
         ws.onmessage = (evt) => {
             clearTimeout(timer);
             try {
