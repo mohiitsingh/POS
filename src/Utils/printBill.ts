@@ -126,7 +126,7 @@ function shortId(id: string): string {
 
 function buildBillHtml(data: BillPrintData): string {
     const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
-    const contentWidth = data.paperSize === '58mm' ? '46mm' : '72mm'; // safe printable width
+    const contentWidth = "100%"; // safe printable width
     const fs = fontSizeMap[data.fontSize];
 
     const itemRows = data.items.map((item, idx) => {
@@ -155,8 +155,8 @@ function buildBillHtml(data: BillPrintData): string {
     font-size: ${fs};
     width: ${contentWidth}; /* strictly constrain to printable area */
     max-width: 100%;
-    margin: 0 auto;
-    padding: 8px 0;
+    margin: 0;
+    padding: 8px 2mm;
     color: #000;
     background: #fff;
   }
@@ -240,7 +240,7 @@ export interface KOTData {
 
 function buildKOTHtml(data: KOTData): string {
     const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
-    const contentWidth = data.paperSize === '58mm' ? '46mm' : '72mm'; // safe printable width
+    const contentWidth = "100%"; // safe printable width
     const fontMap = { small: '11px', medium: '13px', large: '15px' };
     const fs = fontMap[data.fontSize];
 
@@ -265,8 +265,8 @@ function buildKOTHtml(data: KOTData): string {
     font-size: ${fs};
     width: ${contentWidth}; /* strictly constrain to printable area */
     max-width: 100%;
-    margin: 0 auto;
-    padding: 8px 0;
+    margin: 0;
+    padding: 8px 2mm;
     color: #000;
     background: #fff;
   }
@@ -343,8 +343,9 @@ export async function printBill(data: BillPrintData, printerName?: string): Prom
     if (printerName && printerName.trim()) {
         const ws = await connectToService();
         if (ws) {
-            const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html });
+            const ok = await sendToPrinter(ws, { action: 'print-bill', printer: printerName, html, paperSize: data.paperSize });
             ws.close();
+            console.log(html)
             if (ok) return; // ✅ Printed silently
         }
     }
@@ -364,7 +365,7 @@ export async function printKOT(data: KOTData, printerName?: string): Promise<voi
     if (printerName && printerName.trim()) {
         const ws = await connectToService();
         if (ws) {
-            const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html });
+            const ok = await sendToPrinter(ws, { action: 'print-kot', printer: printerName, html, paperSize: data.paperSize });
             ws.close();
             if (ok) return; // ✅ Printed silently
         }
