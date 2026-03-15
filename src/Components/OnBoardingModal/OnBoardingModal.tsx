@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, Building2, Sparkles, ShieldCheck } from "lucide-react";
 import { useSettings } from "../../Contexts/SettingsContext";
 import { supabase } from "../../config/supabase";
-import "./OnboardingModal.css";
+import "./OnBoardingModal.css";
 
 interface OnboardingModalProps {
     onComplete?: () => void;
