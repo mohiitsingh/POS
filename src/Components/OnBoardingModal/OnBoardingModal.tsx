@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, Building2, Sparkles, ShieldCheck } from "lucide-react";
 import { useSettings } from "../../Contexts/SettingsContext";
 import { supabase } from "../../config/supabase";
-import "./OnBoardingModal.css";
+import "./OnboardingModal.css";
 
 interface OnboardingModalProps {
     onComplete?: () => void;
@@ -77,6 +77,9 @@ const OnboardingModal = (_props: OnboardingModalProps) => {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [planError, setPlanError] = useState(false);
 
+    /* ── Terms check ── */
+    const [termsAccepted, setTermsAccepted] = useState(false);
+
     /* ---------- Step 1 ---------- */
     const handleBizChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -118,6 +121,7 @@ const OnboardingModal = (_props: OnboardingModalProps) => {
                 planTitle: selectedPlanDetails.title,
                 totalLabel: selectedPlanDetails.total_label,
                 totalAmount: selectedPlanDetails.total_amount,
+                explicitSubscribe: true,
             },
         });
     };
@@ -248,7 +252,7 @@ const OnboardingModal = (_props: OnboardingModalProps) => {
                                     <Sparkles size={13} /> Step 2 of 3
                                 </span>
                                 <h2>Choose your plan</h2>
-                                <p>Select a plan to get started. All plans include a 14-day free trial.</p>
+                                {/* <p>Select a plan to get started. All plans include a 2-month free trial.</p> */}
                             </div>
                         </div>
 
@@ -377,6 +381,18 @@ const OnboardingModal = (_props: OnboardingModalProps) => {
                             🔒 Payments are 100% secure. You can cancel anytime.
                         </div>
 
+                        <div className="ob-terms-checkbox" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '1rem 0', fontSize: '0.85rem', color: 'var(--color-text-light)', textAlign: 'left' }}>
+                            <input 
+                                type="checkbox" 
+                                id="acceptTerms" 
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                style={{ marginTop: '3px', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="acceptTerms" style={{ cursor: 'pointer' }}>
+                                I accept the <a href="/terms" target="_blank" style={{ color: 'var(--color-primary)' }}>Terms and Conditions</a> and have read the <a href="/privacy" target="_blank" style={{ color: 'var(--color-primary)' }}>Privacy Policy</a>. *
+                            </label>
+                        </div>
 
                         <div className="ob-actions">
                             <button
@@ -388,6 +404,8 @@ const OnboardingModal = (_props: OnboardingModalProps) => {
                             <button
                                 className="ob-btn-primary"
                                 onClick={handleConfirmPayment}
+                                disabled={!termsAccepted}
+                                style={{ opacity: termsAccepted ? 1 : 0.5, cursor: termsAccepted ? 'pointer' : 'not-allowed' }}
                             >
                                 Proceed to Pay <ArrowRight size={18} />
                             </button>

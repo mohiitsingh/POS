@@ -25,16 +25,16 @@ interface FormErrors {
     transactionId?: string;
 }
 
-const PaymentPage = () => {
+const Payment = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, signOut } = useAuth();
+    const { user } = useAuth();
 
     const state = location.state as LocationState | null;
 
     // If no plan info passed, redirect back to onboarding
     useEffect(() => {
-        if (!state?.planId) navigate("/onboarding", { replace: true });
+        if (!state?.planId) navigate("/onboarding", { replace: true, state: { explicitSubscribe: true } });
     }, [state, navigate]);
 
     const [copied, setCopied] = useState(false);
@@ -144,9 +144,11 @@ const PaymentPage = () => {
                         <button
                             className="pay-submit-btn"
                             style={{ marginTop: "0.5rem", width: "100%" }}
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => {
+                                navigate("/dashboard", { replace: true });
+                            }}
                         >
-                            Back to Home
+                            Back to Dashboard
                         </button>
                     </div>
                 </div>
@@ -154,7 +156,7 @@ const PaymentPage = () => {
             {/* Top Bar */}
             <div className="payment-topbar">
                 <span className="payment-topbar-logo">Arambh</span>
-                <button className="payment-topbar-back" onClick={() => navigate("/onboarding")}>
+                <button className="payment-topbar-back" onClick={() => navigate("/onboarding", { state: { explicitSubscribe: true } })}>
                     <ArrowLeft size={15} /> Back to Plans
                 </button>
             </div>
@@ -203,26 +205,6 @@ const PaymentPage = () => {
 
                 {/* ── RIGHT: Verification Form ── */}
                 <div className="payment-card">
-                    {submitted && (
-                        <div className="pay-modal-backdrop">
-                            <div className="pay-modal">
-                                <div className="pay-modal-icon">🙏</div>
-                                <h2 className="pay-modal-title">Thank you for choosing Arambh.</h2>
-                                <p className="pay-modal-body">
-                                    We are currently verifying your payment.<br />
-                                    Access will be enabled shortly.
-                                </p>
-                                <p className="pay-modal-note">We appreciate your patience.</p>
-                                <button
-                                    className="pay-submit-btn"
-                                    style={{ marginTop: "0.5rem", width: "100%" }}
-                                    onClick={() => signOut()}
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    )}
                     {!submitted && (
                         <>
                             <div className="payment-card-title">Step 2 — Verify Your Payment</div>
@@ -324,4 +306,4 @@ const PaymentPage = () => {
     );
 };
 
-export default PaymentPage;
+export default Payment;

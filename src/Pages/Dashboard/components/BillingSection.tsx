@@ -35,7 +35,8 @@ const BillingSection: React.FC<BillingSectionProps> = ({
     const { tables } = useTables();
     const { showSuccess, showError, showWarning } = useToast();
 
-    const [discount, setDiscount] = useState(0);
+    const [discountInput, setDiscountInput] = useState<number | ''>(0);
+    const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
     const [diningType, setDiningType] = useState("Dine In");
     const [selectedTable, setSelectedTable] = useState("");
     const [isDraftsOpen, setIsDraftsOpen] = useState(false);
@@ -44,18 +45,19 @@ const BillingSection: React.FC<BillingSectionProps> = ({
 
     // Initialize/Update discount when default setting changes
     useEffect(() => {
-        if (billing.discountType === 'fixed') {
-            setDiscount(billing.discountValue);
-        } else {
-            setDiscount(0);
-        }
+        setDiscountType(billing.discountType || 'fixed');
+        setDiscountInput(billing.discountValue || 0);
     }, [billing.discountType, billing.discountValue]);
-
 
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+    const parsedDiscount = typeof discountInput === 'number' ? discountInput : 0;
+    const computedDiscount = discountType === 'percentage'
+        ? subtotal * (parsedDiscount / 100)
+        : parsedDiscount;
+
     // Let's refine: The input below allows editing the amount.
-    const validDiscount = Math.min(discount, subtotal);
+    const validDiscount = Math.min(computedDiscount, subtotal);
 
     // Calculate Tax
     const taxAmount = billing.taxValueType === 'percentage'
@@ -244,15 +246,33 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                         <span>Subtotal:</span>
                         <span>₹{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="summary-row">
-                        <span>Discount:</span>
-                        <input
-                            type="number"
-                            value={discount}
-                            onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                            className="discount-input"
-                            placeholder="Amount"
-                        />
+                    <div className="summary-row" style={{ alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            <span>Discount:</span>
+                            <select
+                                value={discountType}
+                                onChange={(e) => setDiscountType(e.target.value as 'fixed' | 'percentage')}
+                                style={{ padding: '2px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #ddd' }}
+                            >
+                                <option value="percentage">%</option>
+                                <option value="fixed">₹</option>
+                            </select>
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            <input
+                                type="number"
+                                value={discountInput}
+                                onChange={(e) => setDiscountInput(e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value)))}
+                                className="discount-input"
+                                placeholder="0"
+                                style={{ width: '60px', textAlign: 'right' }}
+                            />
+                            {discountType === 'percentage' && typeof discountInput === 'number' && discountInput > 0 && (
+                                <span style={{ fontSize: '0.85rem', color: '#666', width: '60px', textAlign: 'right', display: 'inline-block' }}>
+                                    (₹{validDiscount.toFixed(2)})
+                                </span>
+                            )}
+                        </div>
                     </div>
                     {/* Tax Row */}
                     <div className="summary-row">
@@ -313,7 +333,9 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                 {/* Final Action */}
                 <button className="print-btn" disabled={cart.length === 0} onClick={handlePlaceOrder}>
                     <Printer size={18} />
-                    Place Order & Print
+                    {printer.kotOnBillPrinter || printer.kotPrinter.trim() !== ''
+                        ? 'Place Order & Print'
+                        : 'Place Order & Print Bill Only'}
                 </button>
             </div >
         </div >

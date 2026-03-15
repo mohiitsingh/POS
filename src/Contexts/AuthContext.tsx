@@ -10,22 +10,23 @@ function getCacheKey(userId: string) {
     return `sub_cache_${userId}`;
 }
 
-function readSubscriptionCache(userId: string): boolean | null {
+function readSubscriptionCache(userId: string): { hasPaid: boolean, isFreeTrial: boolean, daysLeft: number } | null {
     try {
         const raw = localStorage.getItem(getCacheKey(userId));
         if (!raw) return null;
-        const { value, expiresAt } = JSON.parse(raw) as { value: boolean; expiresAt: number };
+        const { value, expiresAt } = JSON.parse(raw);
         if (Date.now() > expiresAt) {
             localStorage.removeItem(getCacheKey(userId));
             return null; // expired
         }
+        if (typeof value === 'boolean') return null; // Handle old cache
         return value;
     } catch {
         return null;
     }
 }
 
-function writeSubscriptionCache(userId: string, value: boolean) {
+function writeSubscriptionCache(userId: string, value: { hasPaid: boolean, isFreeTrial: boolean, daysLeft: number }) {
     try {
         localStorage.setItem(
             getCacheKey(userId),
@@ -53,6 +54,8 @@ interface AuthContextType {
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     resendVerificationEmail: (email: string) => Promise<void>;
+    isFreeTrialActive: boolean;
+    daysUntilTrialEnds: number;
 }
 
 interface UserMetadata {
@@ -80,18 +83,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [hasPaidSubscription, setHasPaidSubscription] = useState(false);
-    const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+    const [isFreeTrialActive, setIsFreeTrialActive] = useState(false);
+    const [daysUntilTrialEnds, setDaysUntilTrialEnds] = useState(0);
 
     const checkSubscription = useCallback(async (userId: string | undefined) => {
         if (!userId) {
             setHasPaidSubscription(false);
+            setIsFreeTrialActive(false);
+            setDaysUntilTrialEnds(0);
+            setSubscriptionLoading(false);
             return;
         }
 
         // ── 1. Try the 30-minute localStorage cache first ─────────────────────
         const cached = readSubscriptionCache(userId);
         if (cached !== null) {
-            setHasPaidSubscription(cached);
+            setHasPaidSubscription(cached.hasPaid);
+            setIsFreeTrialActive(cached.isFreeTrial);
+            setDaysUntilTrialEnds(cached.daysLeft);
+            setSubscriptionLoading(false);
             return;
         }
 
@@ -117,10 +128,53 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             );
 
             setHasPaidSubscription(hasSub);
-            writeSubscriptionCache(userId, hasSub);
+            
+            // --- Free Trial Logic ---
+            // Fetch trial duration from settings (fallback to 60 days)
+            let trialDays = 60;
+            const { data: settingsData, error: settingsError } = await supabase
+                .from('app_settings')
+                .select('value')
+                .eq('key', 'free_trial_days')
+                .maybeSingle();
+                
+            if (!settingsError && settingsData?.value) {
+                const parsed = parseInt(settingsData.value, 10);
+                if (!isNaN(parsed)) trialDays = parsed;
+            }
+            
+            // Calculate days since user creation
+            let createdDate = new Date();
+            // Try to get user data to find created_at
+            const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId).catch(() => ({data: null, error: true}));
+            
+            // Since admin functions might be blocked by RLS/Permissions on client side, 
+            // fallback to the session's user object if it matches the userId
+            const currentUser = (await supabase.auth.getSession()).data.session?.user;
+            if (!userError && userData?.user) {
+                 createdDate = new Date(userData.user.created_at);
+            } else if (currentUser && currentUser.id === userId) {
+                 createdDate = new Date(currentUser.created_at);
+            }
+
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const daysLeft = Math.max(0, trialDays - diffDays);
+            
+            setDaysUntilTrialEnds(daysLeft);
+            setIsFreeTrialActive(daysLeft > 0);
+
+            // Write all three states to cache
+            writeSubscriptionCache(userId, { hasPaid: hasSub, isFreeTrial: daysLeft > 0, daysLeft });
+            // ------------------------
+
         } catch (err) {
             console.error('Subscription check failed:', err);
             setHasPaidSubscription(false);
+            setIsFreeTrialActive(false);
+            setDaysUntilTrialEnds(0);
         } finally {
             setSubscriptionLoading(false);
         }
@@ -221,6 +275,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         signInWithGoogle,
         signOut,
         resendVerificationEmail,
+        isFreeTrialActive,
+        daysUntilTrialEnds,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

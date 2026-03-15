@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import Sidebar from "../../Components/Sidebar/Sidebar";
+import TrialWarningPopup from "../../Components/TrialWarningPopup/TrialWarningPopup";
 import "./DashboardLayout.css";
 
 const DashboardLayout = () => {
@@ -21,6 +22,8 @@ const DashboardLayout = () => {
             )}
 
             <main className="main-content">
+                <TrialWarningPopup />
+                
                 {/* Mobile Header with Toggle */}
                 <div className="mobile-header">
                     <button

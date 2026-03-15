@@ -20,7 +20,19 @@ interface Verification {
     plans: { title: string; total_amount: number } | null;
 }
 
+interface DemoRequest {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+    state: string;
+    city: string;
+    status: "pending" | "contacted";
+    created_at: string;
+}
+
 type Filter = "all" | "pending" | "approved" | "rejected";
+type DemoFilter = "all" | "pending" | "contacted";
 
 const AdminPage = () => {
     const { user } = useAuth();
@@ -29,6 +41,12 @@ const AdminPage = () => {
     const [filter, setFilter] = useState<Filter>("pending");
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [notes, setNotes] = useState<Record<string, string>>({});
+
+    // Demo Requests State
+    const [currentView, setCurrentView] = useState<"payments" | "demos">("payments");
+    const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
+    const [demoFilter, setDemoFilter] = useState<DemoFilter>("pending");
+    const [demoProcessingId, setDemoProcessingId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -43,9 +61,26 @@ const AdminPage = () => {
         setLoading(false);
     }, []);
 
+    const fetchDemoRequests = useCallback(async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from("demo_requests")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (!error && data) {
+            setDemoRequests(data as DemoRequest[]);
+        }
+        setLoading(false);
+    }, []);
+
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (currentView === "payments") {
+            fetchData();
+        } else {
+            fetchDemoRequests();
+        }
+    }, [currentView, fetchData, fetchDemoRequests]);
 
     const handleAction = async (verificationId: string, action: "approve" | "reject") => {
         if (processingId) return;
@@ -79,16 +114,52 @@ const AdminPage = () => {
         }
     };
 
-    const counts = {
+    const handleDemoAction = async (requestId: string, action: "contacted") => {
+        if (demoProcessingId) return;
+        setDemoProcessingId(requestId);
+
+        try {
+            const { error } = await supabase
+                .from("demo_requests")
+                .update({ status: action })
+                .eq("id", requestId);
+
+            if (error) throw error;
+
+            // Optimistically update local state
+            setDemoRequests((prev) =>
+                prev.map((r) =>
+                    r.id === requestId ? { ...r, status: action } : r
+                )
+            );
+        } catch (err: any) {
+            console.error("Demo action failed:", err);
+            alert("Action failed: " + (err.message || JSON.stringify(err)));
+        } finally {
+            setDemoProcessingId(null);
+        }
+    };
+
+    const paymentCounts = {
         all: verifications.length,
         pending: verifications.filter((v) => v.status === "pending").length,
         approved: verifications.filter((v) => v.status === "approved").length,
         rejected: verifications.filter((v) => v.status === "rejected").length,
     };
 
-    const displayed = filter === "all"
+    const demoCounts = {
+        all: demoRequests.length,
+        pending: demoRequests.filter((d) => d.status === "pending").length,
+        contacted: demoRequests.filter((d) => d.status === "contacted").length,
+    };
+
+    const displayedPayments = filter === "all"
         ? verifications
         : verifications.filter((v) => v.status === filter);
+
+    const displayedDemos = demoFilter === "all"
+        ? demoRequests
+        : demoRequests.filter((d) => d.status === demoFilter);
 
     const formatDate = (iso: string) =>
         new Date(iso).toLocaleString("en-IN", {
@@ -108,42 +179,89 @@ const AdminPage = () => {
             </div>
 
             <div className="admin-content">
-                <h1 className="admin-page-title">Payment Verifications</h1>
+                <div className="admin-view-toggle" style={{ marginBottom: "2rem", display: "flex", gap: "1rem" }}>
+                    <button 
+                        className={`admin-filter-btn ${currentView === "payments" ? "active" : ""}`}
+                        onClick={() => setCurrentView("payments")}
+                    >
+                        Payment Verifications
+                    </button>
+                    <button 
+                        className={`admin-filter-btn ${currentView === "demos" ? "active" : ""}`}
+                        onClick={() => setCurrentView("demos")}
+                    >
+                        Demo Requests
+                    </button>
+                </div>
+
+                <h1 className="admin-page-title">
+                    {currentView === "payments" ? "Payment Verifications" : "Demo Requests"}
+                </h1>
                 <p className="admin-page-subtitle">
-                    Review and approve UPI payment submissions from users.
+                    {currentView === "payments" 
+                        ? "Review and approve UPI payment submissions from users."
+                        : "Manage demo requests from the landing page. Reach out to potential customers."}
                 </p>
 
                 {/* Stats */}
                 <div className="admin-stats">
-                    <div className="admin-stat-card pending">
-                        <span className="admin-stat-value">{counts.pending}</span>
-                        <span className="admin-stat-label">Pending</span>
-                    </div>
-                    <div className="admin-stat-card approved">
-                        <span className="admin-stat-value">{counts.approved}</span>
-                        <span className="admin-stat-label">Approved</span>
-                    </div>
-                    <div className="admin-stat-card rejected">
-                        <span className="admin-stat-value">{counts.rejected}</span>
-                        <span className="admin-stat-label">Rejected</span>
-                    </div>
+                    {currentView === "payments" ? (
+                        <>
+                            <div className="admin-stat-card pending">
+                                <span className="admin-stat-value">{paymentCounts.pending}</span>
+                                <span className="admin-stat-label">Pending</span>
+                            </div>
+                            <div className="admin-stat-card approved">
+                                <span className="admin-stat-value">{paymentCounts.approved}</span>
+                                <span className="admin-stat-label">Approved</span>
+                            </div>
+                            <div className="admin-stat-card rejected">
+                                <span className="admin-stat-value">{paymentCounts.rejected}</span>
+                                <span className="admin-stat-label">Rejected</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="admin-stat-card pending">
+                                <span className="admin-stat-value">{demoCounts.pending}</span>
+                                <span className="admin-stat-label">Pending</span>
+                            </div>
+                            <div className="admin-stat-card approved">
+                                <span className="admin-stat-value">{demoCounts.contacted}</span>
+                                <span className="admin-stat-label">Contacted</span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Filter tabs */}
                 <div className="admin-filter-row">
-                    {(["pending", "approved", "rejected", "all"] as Filter[]).map((f) => (
-                        <button
-                            key={f}
-                            className={`admin-filter-btn${filter === f ? " active" : ""}`}
-                            onClick={() => setFilter(f)}
-                        >
-                            {f.charAt(0).toUpperCase() + f.slice(1)}
-                            {f !== "all" && ` (${counts[f]})`}
-                        </button>
-                    ))}
+                    {currentView === "payments" ? (
+                        (["pending", "approved", "rejected", "all"] as Filter[]).map((f) => (
+                            <button
+                                key={f}
+                                className={`admin-filter-btn${filter === f ? " active" : ""}`}
+                                onClick={() => setFilter(f)}
+                            >
+                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                                {f !== "all" && ` (${paymentCounts[f]})`}
+                            </button>
+                        ))
+                    ) : (
+                        (["pending", "contacted", "all"] as DemoFilter[]).map((f) => (
+                            <button
+                                key={f}
+                                className={`admin-filter-btn${demoFilter === f ? " active" : ""}`}
+                                onClick={() => setDemoFilter(f)}
+                            >
+                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                                {f !== "all" && ` (${demoCounts[f]})`}
+                            </button>
+                        ))
+                    )}
                     <button
                         className="admin-filter-btn"
-                        onClick={fetchData}
+                        onClick={currentView === "payments" ? fetchData : fetchDemoRequests}
                         style={{ marginLeft: "auto" }}
                         title="Refresh"
                     >
@@ -156,29 +274,33 @@ const AdminPage = () => {
                     {loading ? (
                         <div className="admin-loading">
                             <Loader2 size={20} className="admin-spinner" style={{ marginRight: 8 }} />
-                            Loading verifications…
+                            Loading {currentView}...
                         </div>
-                    ) : displayed.length === 0 ? (
+                    ) : (currentView === "payments" ? displayedPayments : displayedDemos).length === 0 ? (
                         <div className="admin-empty">
                             <div className="admin-empty-icon">📭</div>
-                            No {filter === "all" ? "" : filter} submissions yet.
+                            No {currentView === "payments" 
+                                ? (filter === "all" ? "" : filter) 
+                                : (demoFilter === "all" ? "" : demoFilter)} records found.
                         </div>
                     ) : (
                         <table className="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Submitted</th>
-                                    <th>User Info</th>
-                                    <th>Plan</th>
-                                    <th>Transaction ID</th>
-                                    <th>Screenshot</th>
-                                    <th>Status</th>
-                                    <th>Note / Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {displayed.map((v) => (
-                                    <tr key={v.id}>
+                            {currentView === "payments" ? (
+                                <>
+                                    <thead>
+                                        <tr>
+                                            <th>Submitted</th>
+                                            <th>User Info</th>
+                                            <th>Plan</th>
+                                            <th>Transaction ID</th>
+                                            <th>Screenshot</th>
+                                            <th>Status</th>
+                                            <th>Note / Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {displayedPayments.map((v) => (
+                                            <tr key={v.id}>
                                         {/* Date */}
                                         <td>
                                             <strong>{formatDate(v.created_at)}</strong>
@@ -283,8 +405,68 @@ const AdminPage = () => {
                                             )}
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
+                                        ))}
+                                    </tbody>
+                                </>
+                            ) : (
+                                <>
+                                    <thead>
+                                        <tr>
+                                            <th>Submitted</th>
+                                            <th>Name</th>
+                                            <th>Contact Info</th>
+                                            <th>Location</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {displayedDemos.map((d) => (
+                                            <tr key={d.id}>
+                                                <td>
+                                                    <strong>{formatDate(d.created_at)}</strong>
+                                                </td>
+                                                <td>
+                                                    <strong>{d.name}</strong>
+                                                </td>
+                                                <td>
+                                                    <strong>{d.phone}</strong>
+                                                    {d.email && <small>✉️ {d.email}</small>}
+                                                </td>
+                                                <td>
+                                                    <strong>{d.city}</strong>
+                                                    <small>{d.state}</small>
+                                                </td>
+                                                <td>
+                                                    <span className={`admin-status-badge ${d.status === "contacted" ? "approved" : "pending"}`}>
+                                                        {d.status}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {d.status === "pending" ? (
+                                                        <button
+                                                            className="admin-action-btn approve"
+                                                            disabled={demoProcessingId === d.id}
+                                                            onClick={() => handleDemoAction(d.id, "contacted")}
+                                                        >
+                                                            {demoProcessingId === d.id ? (
+                                                                <Loader2 size={13} className="admin-spinner" />
+                                                            ) : (
+                                                                <CheckCircle size={13} />
+                                                            )}
+                                                            Mark Contacted
+                                                        </button>
+                                                    ) : (
+                                                        <span style={{ color: "#334155", fontSize: "0.8rem" }}>
+                                                            ✓ Contacted
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </>
+                            )}
                         </table>
                     )}
                 </div>

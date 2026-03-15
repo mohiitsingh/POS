@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../config/supabase";
-import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Check,
   ArrowRight,
@@ -10,8 +9,10 @@ import {
   ChevronUp,
   Menu,
   ReceiptIndianRupee,
+  X,
+  Loader2,
 } from "lucide-react";
-import logo from "/logo.png"
+import logo from "/public/logo.png"
 import "./LandingPage.css";
 
 interface Plan {
@@ -50,6 +51,18 @@ const LandingPage = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const navigate = useNavigate();
 
+  // Demo Modal State
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [demoForm, setDemoForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    state: "",
+    city: "",
+  });
+  const [demoSubmitStatus, setDemoSubmitStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [demoErrorMessage, setDemoErrorMessage] = useState("");
+
   const [plans, setPlans] = useState<Plan[]>([]);
 
   useEffect(() => {
@@ -73,16 +86,72 @@ const LandingPage = () => {
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDemoSubmitStatus("submitting");
+    setDemoErrorMessage("");
+
+    // --- Validation ---
+    if (demoForm.name.trim().length < 2) {
+      setDemoSubmitStatus("error");
+      setDemoErrorMessage("Please enter a valid full name.");
+      return;
+    }
+
+    // Basic 10-digit Indian phone number validation
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(demoForm.phone.trim())) {
+      setDemoSubmitStatus("error");
+      setDemoErrorMessage("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
+    if (demoForm.email.trim() !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(demoForm.email.trim())) {
+        setDemoSubmitStatus("error");
+        setDemoErrorMessage("Please enter a valid email address.");
+        return;
+      }
+    }
+
+    if (demoForm.state.trim().length < 2 || demoForm.city.trim().length < 2) {
+      setDemoSubmitStatus("error");
+      setDemoErrorMessage("Please enter a valid state and city.");
+      return;
+    }
+    // ------------------
+
+    try {
+      const { error } = await supabase.from("demo_requests").insert([
+        {
+          name: demoForm.name.trim(),
+          phone: demoForm.phone.trim(),
+          email: demoForm.email.trim(),
+          state: demoForm.state.trim(),
+          city: demoForm.city.trim(),
+        },
+      ]);
+
+      if (error) throw error;
+
+      setDemoSubmitStatus("success");
+    } catch (err: any) {
+      console.error("Demo submission failed:", err);
+      setDemoSubmitStatus("error");
+      setDemoErrorMessage(err.message || "Failed to submit request.");
+    }
+  };
+
+  const closeDemoModal = () => {
+    setIsDemoModalOpen(false);
+    setDemoSubmitStatus("idle");
+    setDemoForm({ name: "", phone: "", email: "", state: "", city: "" });
+  };
+
   return (
     <div className="app">
-       <Helmet>
-        <title>Arambh POS | Smart Billing Software for Restaurants & Cafes</title>
-        <meta
-          name="description"
-          content="Arambh POS helps small restaurants, cafes and food shops manage billing, orders and daily operations easily."
-        />
-      </Helmet>
-
       {/* Hero Container (Wrapper including Navbar) */}
       <div className="hero-wrapper">
         <nav className={`navbar-floating ${scrolled ? "scrolled" : ""}`}>
@@ -107,7 +176,7 @@ const LandingPage = () => {
 
         <section className="hero-centered">
           <div className="hero-content-center">
-            <span className="hero-badge-pill">✨ New Launch Offer</span>
+            <span className="hero-badge-pill">✨ New Launch Offer - Free For 2 Months</span>
             <h1>
               Generate Bills in <br className="break-desktop" />
               <span className="text-highlight">3 Clicks</span>.
@@ -119,13 +188,21 @@ const LandingPage = () => {
             </p>
 
             <div className="center-actions">
-              <div className="email-input-wrapper">
-                <input type="email" placeholder="Enter your email address" />
-                <button className="btn-primary-solid">
-                  See a demo <ArrowRight size={18} />
+              {/* <div className="email-input-wrapper">
+              <input type="email" placeholder="Enter your email address" />
+              <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>
+                See a demo <ArrowRight size={14} />
+              </button>
+              </div> */}
+              <div className="cta-actions">
+                <button className="btn-white-solid" onClick={() => navigate("/login")}>
+                  Get Started Free <ArrowRight size={18} />
                 </button>
+                <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>Book a Demo</button>
               </div>
             </div>
+
+
 
             <div className="hero-image-floating">
               {/* Realistic POS Card */}
@@ -172,7 +249,7 @@ const LandingPage = () => {
           </div>
 
           {/* Logos Marquee */}
-          <div className="hero-logos">
+          {/* <div className="hero-logos">
             <span>Trusted by 500+ Cafes</span>
             <div className="logo-row">
               <span className="brand-logo">CafeCoffee</span>
@@ -181,7 +258,7 @@ const LandingPage = () => {
               <span className="brand-logo">TacoBell</span>
               <span className="brand-logo">Starbucks</span>
             </div>
-          </div>
+          </div> */}
         </section>
       </div>
 
@@ -412,7 +489,7 @@ const LandingPage = () => {
             color: "var(--color-text-light)",
           }}
         >
-          All plans include a 14-day free trial • No subscription required
+          All plans include a 2-month free trial • No subscription required
         </p>
       </section>
 
@@ -473,13 +550,13 @@ const LandingPage = () => {
             </h2>
             <p>
               Join 500+ cafes generating bills in 3 clicks. <br />
-              Start your 14-day free trial today.
+              Start your 2-month free trial today.
             </p>
             <div className="cta-actions">
-              <button className="btn-white-solid">
+              <button className="btn-white-solid" onClick={() => navigate("/login")}>
                 Get Started Free <ArrowRight size={18} />
               </button>
-              <button className="btn-transparent">Book a Demo</button>
+              <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>Book a Demo</button>
             </div>
           </div>
 
@@ -495,15 +572,114 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="footer">
         <div className="logo">
-          <img src={logo} alt="Bill Easy" className="logo-img" />
+          <img src={logo} alt="Arambh" className="logo-img" />
         </div>
         <div className="footer-links">
           <span>&copy; 2026 Arambh</span>
-          <a href="#">Support</a>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
+          <Link to="/support">Support</Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
         </div>
       </footer>
+
+      {/* Demo Modal rendering */}
+      {isDemoModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content demo-modal">
+            <button className="modal-close" onClick={closeDemoModal}>
+              <X size={20} />
+            </button>
+
+            {demoSubmitStatus === "success" ? (
+              <div className="demo-success">
+                <div className="success-icon-wrap">
+                  <Check size={32} color="white" />
+                </div>
+                <h3>Request Sent Successfully!</h3>
+                <p>Our team will contact you soon.</p>
+                <button className="btn-primary-solid" onClick={closeDemoModal} style={{ margin: "1rem auto" }}>
+                  Got it
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="modal-title">Book a Free Demo</h3>
+                <p className="modal-subtitle">Leave your details and we'll show you how Bill Easy works.</p>
+
+                {demoSubmitStatus === "error" && (
+                  <div className="error-message" style={{ marginBottom: "1rem" }}>
+                    {demoErrorMessage}
+                  </div>
+                )}
+
+                <form className="demo-form" onSubmit={handleDemoSubmit}>
+                  <div className="form-group">
+                    <label>Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. John Doe"
+                      value={demoForm.name}
+                      onChange={(e) => setDemoForm({ ...demoForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="e.g. 9876543210"
+                      value={demoForm.phone}
+                      onChange={(e) => setDemoForm({ ...demoForm, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. john@cafe.com"
+                      value={demoForm.email}
+                      onChange={(e) => setDemoForm({ ...demoForm, email: e.target.value })}
+                    />
+                  </div>
+                  {/* <div className="form-row" style={{ display: "flex", gap: "1rem" }}> */}
+                  <div className="form-group" >
+                    <label>State *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Maharashtra"
+                      value={demoForm.state}
+                      onChange={(e) => setDemoForm({ ...demoForm, state: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group" >
+                    <label>City *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Mumbai"
+                      value={demoForm.city}
+                      onChange={(e) => setDemoForm({ ...demoForm, city: e.target.value })}
+                    />
+                  </div>
+                  {/* </div> */}
+
+                  <button
+                    type="submit"
+                    className="btn-primary-solid"
+                    disabled={demoSubmitStatus === "submitting"}
+                    style={{ width: "100%", marginTop: "1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}
+                  >
+                    {demoSubmitStatus === "submitting" && <Loader2 size={16} className="spinner" />}
+                    Submit Request
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

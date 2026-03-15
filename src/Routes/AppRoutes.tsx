@@ -19,6 +19,9 @@ import AdminPage from "../Pages/Admin/Admin";
 import { MenuProvider } from "../Contexts/MenuContext";
 import { OrderProvider } from "../Contexts/OrderContext";
 import { TableProvider } from "../Contexts/TableContext";
+import Privacy from "../Pages/Privacy/Privacy";
+import Terms from "../Pages/Terms/Terms";
+import Support from "../Pages/Support/Support";
 
 /**
  * SubscribedProviders — mounts data providers ONLY for authenticated + subscribed users.
@@ -42,6 +45,9 @@ const AppRoutes = () => {
       <Route element={<PublicRoute />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/support" element={<Support />} />
       </Route>
 
       {/* Email Verification - Public route without redirect */}
@@ -69,7 +75,7 @@ const AppRoutes = () => {
 
       {/* Admin Route - Only accessible to mohits0819@gmail.com via direct URL */}
       <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/mohit" element={<AdminPage />} />
       </Route>
 
       {/* Fallback - Redirect any unknown route to login */}

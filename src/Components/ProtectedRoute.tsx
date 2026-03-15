@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
 
 const ProtectedRoute = () => {
-    const { user, loading, hasPaidSubscription, subscriptionLoading } = useAuth();
+    const { user, loading, hasPaidSubscription, subscriptionLoading, isFreeTrialActive } = useAuth();
 
     if (loading || subscriptionLoading) {
         return (
@@ -20,7 +20,7 @@ const ProtectedRoute = () => {
     }
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!hasPaidSubscription) return <Navigate to="/onboarding" replace />;
+    if (!hasPaidSubscription && !isFreeTrialActive) return <Navigate to="/onboarding" replace />;
 
     return <Outlet />;
 };

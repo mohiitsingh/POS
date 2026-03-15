@@ -1,17 +1,67 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSettings } from "../../../Contexts/SettingsContext";
+import { useAuth } from "../../../Contexts/AuthContext";
 import { useToast } from "../../../Contexts/ToastContext";
-import { Save } from "lucide-react";
+import { Save, ShieldCheck } from "lucide-react";
+import { supabase } from "../../../config/supabase";
 
 const ProfileSettings = () => {
     const { profile, updateProfile } = useSettings();
+    const { user, hasPaidSubscription, isFreeTrialActive, daysUntilTrialEnds } = useAuth();
     const { showSuccess, showError } = useToast();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState(profile);
+
+    // Subscription details state
+    const [activePlan, setActivePlan] = useState<{ title: string; expires_at: string | null; loading: boolean }>({
+        title: "",
+        expires_at: null,
+        loading: true,
+    });
 
     // Sync form when profile loads asynchronously from Supabase
     useEffect(() => {
         setFormData(profile);
     }, [profile]);
+
+    // Fetch exact active plan name and expiration
+    useEffect(() => {
+        const fetchSubscriptionDetails = async () => {
+            if (!user?.id || !hasPaidSubscription) {
+                setActivePlan((prev) => ({ ...prev, loading: false }));
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from("subscriptions")
+                    .select("expires_at, plan_id")
+                    .eq("user_id", user.id)
+                    .eq("status", "active")
+                    .maybeSingle();
+
+                if (!error && data) {
+                    // Type assertion since `.select('plans(title)')` returns an array or single obj depending on relationship,
+                    // but usually an object when referencing a parent table.
+                    // const planTitle = Array.isArray(data.plan_id) ? data.plan_id[0]?.title : (data.plan_id as any)?.title;
+                    const planTitle = data.plan_id.toUpperCase();
+                    setActivePlan({
+                        title: planTitle || "Pro Plan",
+                        expires_at: data.expires_at,
+                        loading: false,
+                    });
+                } else {
+                    setActivePlan((prev) => ({ ...prev, loading: false }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch plan details:", err);
+                setActivePlan((prev) => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchSubscriptionDetails();
+    }, [user?.id, hasPaidSubscription]);
 
     // Password State
     const [passwordData, setPasswordData] = useState({
@@ -93,7 +143,7 @@ const ProfileSettings = () => {
                         style={{ opacity: 0.55, cursor: 'not-allowed', background: 'var(--color-border, #e2e8f0)' }}
                     />
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light, #94a3b8)', marginTop: '4px', display: 'block' }}>
-                        Email is managed by your account and cannot be changed.
+                        Email is managed by your account and cannot be changed here.
                     </span>
                 </div>
                 <div className="form-group">
@@ -139,6 +189,58 @@ const ProfileSettings = () => {
                     <Save size={18} /> Save Profile
                 </button>
             </div>
+
+            <hr style={{ margin: "3rem 0", border: 0, borderTop: "1px solid var(--color-border)" }} />
+
+            <h2 className="section-title">Subscription &amp; Plan</h2>
+            <div className="setting-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                {activePlan.loading ? (
+                    <p style={{ color: 'var(--color-text-light)' }}>Loading plan details...</p>
+                ) : hasPaidSubscription ? (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <ShieldCheck size={24} color="var(--color-primary)" />
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>Active: {activePlan.title}</h3>
+                        </div>
+                        {activePlan.expires_at && !isNaN(new Date(activePlan.expires_at).getTime()) && (
+                            <p style={{ color: 'var(--color-text-light)', fontSize: '0.95rem' }}>
+                                Your subscription will renew/end on <strong>{new Date(activePlan.expires_at).toLocaleDateString("en-IN")}</strong>.
+                            </p>
+                        )}
+                    </>
+                ) : isFreeTrialActive ? (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#fbbf24' }}></div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>Free Trial Plan</h3>
+                        </div>
+                        <p style={{ color: 'var(--color-text-light)', fontSize: '0.95rem' }}>
+                            You have <strong>{daysUntilTrialEnds} days</strong> remaining on your free trial.
+                        </p>
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <button className="btn-primary" onClick={() => navigate("/onboarding", { state: { explicitSubscribe: true } })}>
+                                Upgrade to Pro Plans
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }}></div>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>Free Plan (Trial Expired)</h3>
+                        </div>
+                        <p style={{ color: 'var(--color-text-light)', fontSize: '0.95rem' }}>
+                            Your free trial has ended. Upgrade to continue using premium features.
+                        </p>
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <button className="btn-primary" onClick={() => navigate("/onboarding", { state: { explicitSubscribe: true } })}>
+                                Upgrade to Pro Plans
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+
         </div>
     );
 };

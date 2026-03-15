@@ -125,7 +125,6 @@ function shortId(id: string): string {
 }
 
 function buildBillHtml(data: BillPrintData): string {
-    const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
     const contentWidth = "100%"; // safe printable width
     const fs = fontSizeMap[data.fontSize];
 
@@ -170,12 +169,13 @@ function buildBillHtml(data: BillPrintData): string {
   .summary-row { display: flex; justify-content: space-between; padding: 2px 0; }
   .total-row   { font-weight: bold; font-size: calc(${fs} + 2px); border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }
   @media print {
-    @page { margin: 0; size: ${pageWidth} auto; }
+    @page { margin: 0; }
     body  { margin: 0 auto; padding: 4px 0; }
   }
 </style>
 </head>
 <body>
+<div id="print-content">
 
 <!-- HEADER -->
 <div class="center bold large">${data.businessName}</div>
@@ -222,7 +222,7 @@ ${hr}
 
 <!-- FOOTER -->
 <div class="center bold" style="margin-top:8px;">Thank You !! Visit Us Again.</div>
-
+</div>
 </body>
 </html>`;
 }
@@ -239,7 +239,6 @@ export interface KOTData {
 }
 
 function buildKOTHtml(data: KOTData): string {
-    const pageWidth = data.paperSize === '58mm' ? '58mm' : '80mm';
     const contentWidth = "100%"; // safe printable width
     const fontMap = { small: '11px', medium: '13px', large: '15px' };
     const fs = fontMap[data.fontSize];
@@ -276,12 +275,13 @@ function buildKOTHtml(data: KOTData): string {
   table   { width: 100%; border-collapse: collapse; }
   td      { vertical-align: middle; }
   @media print {
-    @page { margin: 0; size: ${pageWidth} auto; }
+    @page { margin: 0; }
     body  { margin: 0 auto; padding: 4px 0; }
   }
 </style>
 </head>
 <body>
+<div id="print-content">
 
 <!-- KOT HEADER -->
 <div class="center bold" style="font-size:calc(${fs} + 2px);letter-spacing:2px;">-- KOT --</div>
@@ -312,6 +312,7 @@ ${hr}
 </table>
 ${hr}
 
+</div>
 </body>
 </html>`;
 }
