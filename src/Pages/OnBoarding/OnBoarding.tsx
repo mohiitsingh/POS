@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../Contexts/AuthContext";
 import OnboardingModal from "../../Components/OnBoardingModal/OnBoardingModal";
-import "./Onboarding.css";
+import "./OnBoarding.css";
 
 const Onboarding = () => {
     const navigate = useNavigate();
