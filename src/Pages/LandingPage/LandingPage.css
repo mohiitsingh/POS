@@ -1061,8 +1061,8 @@
 
 .modal-content.demo-modal {
   background: white;
-  padding: 0.8rem;
-  border-radius: 1.5rem;
+  padding: 1rem;
+  border-radius: 1rem;
   width: auto;
   max-width: 400px;
   height: fit-content;

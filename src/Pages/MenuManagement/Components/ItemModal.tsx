@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useMenu, type MenuItem } from "../../../Contexts/MenuContext";
+import DOMPurify from "dompurify";
 
 interface ItemModalProps {
     isOpen: boolean;
@@ -43,16 +44,19 @@ const ItemModal = ({ isOpen, onClose, itemToEdit }: ItemModalProps) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!name || !price || !categoryId) return;
+        const sanitizedName = DOMPurify.sanitize(name.trim());
+        const sanitizedDesc = DOMPurify.sanitize(description.trim());
+
+        if (!sanitizedName || !price || !categoryId) return;
 
         const priceNum = parseFloat(price);
         if (isNaN(priceNum) || priceNum < 0) return;
 
         const payload = {
-            name,
+            name: sanitizedName,
             price: priceNum,
             categoryId,
-            description,
+            description: sanitizedDesc,
             isVeg
         };
 

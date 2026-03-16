@@ -16,7 +16,6 @@ import {
 import logo from "/public/logo.png"
 import "./LandingPage.css";
 import type { RecommendedPrinter } from "../Printers/PrintersPage";
-import DOMPurify from "dompurify";
 
 interface Plan {
   id: string;
@@ -104,26 +103,11 @@ const LandingPage = () => {
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Check rate limit: 60 seconds cooldown
-    const lastSubmitTime = localStorage.getItem("last_demo_request_time");
-    if (lastSubmitTime && Date.now() - parseInt(lastSubmitTime) < 30000) {
-      setDemoSubmitStatus("error");
-      setDemoErrorMessage("You're doing that too fast. Please wait a minute and try again.");
-      return;
-    }
-
     setDemoSubmitStatus("submitting");
     setDemoErrorMessage("");
 
-    const sName = DOMPurify.sanitize(demoForm.name.trim());
-    const sPhone = DOMPurify.sanitize(demoForm.phone.trim());
-    const sEmail = DOMPurify.sanitize(demoForm.email.trim());
-    const sState = DOMPurify.sanitize(demoForm.state.trim());
-    const sCity = DOMPurify.sanitize(demoForm.city.trim());
-
     // --- Validation ---
-    if (sName.length < 2) {
+    if (demoForm.name.trim().length < 2) {
       setDemoSubmitStatus("error");
       setDemoErrorMessage("Please enter a valid full name.");
       return;
@@ -131,22 +115,22 @@ const LandingPage = () => {
 
     // Basic 10-digit Indian phone number validation
     const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(sPhone)) {
+    if (!phoneRegex.test(demoForm.phone.trim())) {
       setDemoSubmitStatus("error");
       setDemoErrorMessage("Please enter a valid 10-digit phone number.");
       return;
     }
 
-    if (sEmail !== "") {
+    if (demoForm.email.trim() !== "") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(sEmail)) {
+      if (!emailRegex.test(demoForm.email.trim())) {
         setDemoSubmitStatus("error");
         setDemoErrorMessage("Please enter a valid email address.");
         return;
       }
     }
 
-    if (sState.length < 2 || sCity.length < 2) {
+    if (demoForm.state.trim().length < 2 || demoForm.city.trim().length < 2) {
       setDemoSubmitStatus("error");
       setDemoErrorMessage("Please enter a valid state and city.");
       return;
@@ -156,17 +140,16 @@ const LandingPage = () => {
     try {
       const { error } = await supabase.from("demo_requests").insert([
         {
-          name: sName,
-          phone: sPhone,
-          email: sEmail,
-          state: sState,
-          city: sCity,
+          name: demoForm.name.trim(),
+          phone: demoForm.phone.trim(),
+          email: demoForm.email.trim(),
+          state: demoForm.state.trim(),
+          city: demoForm.city.trim(),
         },
       ]);
 
       if (error) throw error;
 
-      localStorage.setItem("last_demo_request_time", Date.now().toString());
       setDemoSubmitStatus("success");
     } catch (err: any) {
       console.error("Demo submission failed:", err);

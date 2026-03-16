@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import "./Login.css";
 import BrandingPanel from "../../Components/BrandingPanel/BrandingPanel";
 import { Link, useNavigate } from "react-router-dom";
-import { Chrome } from "lucide-react";
-import logo from "/logo.png";
+import logo from "/public/logo.png";
 import { useAuth } from "../../Contexts/AuthContext";
 import VerificationDialog from "../../Components/VerificationDialog/VerificationDialog";
 
@@ -35,6 +34,12 @@ const Login = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+
+    // Prevent spaces in password fields during registration
+    if (!isLoginMode && (name === "password" || name === "confirmPassword") && value.includes(" ")) {
+      return;
+    }
+
     setFormData({
       ...formData,
       [name]: type === "checkbox" ? checked : value,
@@ -56,6 +61,8 @@ const Login = () => {
 
     if (!formData.password) {
       newErrors.password = "Password is required";
+    } else if (!isLoginMode && formData.password.includes(" ")) {
+      newErrors.password = "Password cannot contain spaces";
     } else if (formData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
@@ -254,7 +261,8 @@ const Login = () => {
 
               <div className="social-buttons">
                 <button type="button" className="btn-social" onClick={signInWithGoogle}>
-                  <Chrome size={20} />
+                  {/* <Chrome size={20} /> */}
+                  <img src="/google.svg" alt="Google" className="google-icon" />
                   Google
                 </button>
               </div>

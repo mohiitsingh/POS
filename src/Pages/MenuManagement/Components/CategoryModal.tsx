@@ -3,6 +3,7 @@ import { X, Trash2 } from "lucide-react";
 import { useMenu, type Category } from "../../../Contexts/MenuContext";
 import { useToast } from "../../../Contexts/ToastContext";
 import ConfirmDialog from "../../../Components/ConfirmDialog/ConfirmDialog";
+import DOMPurify from "dompurify";
 
 interface CategoryModalProps {
     isOpen: boolean;
@@ -31,10 +32,12 @@ const CategoryModal = ({ isOpen, onClose, categoryToEdit }: CategoryModalProps) 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) return;
+        
+        const sanitizedName = DOMPurify.sanitize(name.trim());
+        if (!sanitizedName) return;
 
         // Check for duplicate name
-        const normalizedName = name.trim().toLowerCase();
+        const normalizedName = sanitizedName.toLowerCase();
         const duplicate = categories.find(cat =>
             cat.name.toLowerCase() === normalizedName &&
             (!categoryToEdit || cat.id !== categoryToEdit.id)
@@ -46,13 +49,13 @@ const CategoryModal = ({ isOpen, onClose, categoryToEdit }: CategoryModalProps) 
         }
 
         if (categoryToEdit) {
-            updateCategory(categoryToEdit.id, name);
+            updateCategory(categoryToEdit.id, sanitizedName);
             // Sync status if it changed (optimization: only if different)
             if (categoryToEdit.isActive !== isActive) {
                 toggleCategoryStatus(categoryToEdit.id);
             }
         } else {
-            addCategory(name);
+            addCategory(sanitizedName);
         }
         onClose();
     };

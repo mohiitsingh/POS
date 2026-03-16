@@ -22,6 +22,7 @@ import { TableProvider } from "../Contexts/TableContext";
 import Privacy from "../Pages/Privacy/Privacy";
 import Terms from "../Pages/Terms/Terms";
 import Support from "../Pages/Support/Support";
+import PrintersPage from "../Pages/Printers/PrintersPage";
 
 /**
  * SubscribedProviders — mounts data providers ONLY for authenticated + subscribed users.
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/printers" element={<PrintersPage />} />
       </Route>
 
       {/* Email Verification - Public route without redirect */}

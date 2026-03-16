@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Copy, Check, Loader2, ImageUp } from "lucide-react";
 import { supabase } from "../../config/supabase";
 import { useAuth } from "../../Contexts/AuthContext";
+import DOMPurify from "dompurify";
 import "./Payment.css";
 
 const UPI_ID = "ms1069@axl";
@@ -25,7 +26,7 @@ interface FormErrors {
     transactionId?: string;
 }
 
-const Payment = () => {
+const PaymentPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
@@ -86,20 +87,46 @@ const Payment = () => {
         setSubmitting(true);
         setServerError("");
 
+        const sPhone = DOMPurify.sanitize(form.phone.trim());
+        const sTransactionId = DOMPurify.sanitize(form.transactionId.trim());
+
         try {
             // Upload screenshot to Supabase Storage if provided
             let screenshotUrl: string | null = null;
             if (form.screenshot) {
-                const ext = form.screenshot.name.split(".").pop();
-                const path = `payment-proofs/${user.id}_${Date.now()}.${ext}`;
+                const file = form.screenshot;
+                
+                // --- Secure Upload Validations ---
+                if (file.size > 5 * 1024 * 1024) {
+                    setServerError("Screenshot must be less than 5MB.");
+                    setSubmitting(false);
+                    return;
+                }
+                
+                const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+                if (!allowedTypes.includes(file.type)) {
+                    setServerError("Screenshot must be a JPEG, PNG, or WEBP image.");
+                    setSubmitting(false);
+                    return;
+                }
+                
+                // Sanitize and randomize filename
+                const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+                const randomHash = Math.random().toString(36).substring(2, 12);
+                const safeName = `${user.id}_${Date.now()}_${randomHash}.${ext}`;
+                const path = `payment-proofs/${safeName}`;
+                // ---------------------------------
+
                 const { error: uploadError } = await supabase.storage
                     .from("payment-screenshots")
-                    .upload(path, form.screenshot, { upsert: true });
+                    .upload(path, file, { upsert: true });
                 if (!uploadError) {
                     const { data: urlData } = supabase.storage
                         .from("payment-screenshots")
                         .getPublicUrl(path);
                     screenshotUrl = urlData.publicUrl;
+                } else {
+                    throw new Error("Failed to upload screenshot: " + uploadError.message);
                 }
             }
 
@@ -107,9 +134,9 @@ const Payment = () => {
             const { error } = await supabase.from("payment_verifications").insert({
                 user_id: user.id,
                 plan_id: state.planId,
-                phone: form.phone.trim(),
+                phone: sPhone,
                 email: user?.email ?? "",
-                transaction_id: form.transactionId.trim(),
+                transaction_id: sTransactionId,
                 screenshot_url: screenshotUrl,
                 status: "pending",
             });
@@ -306,4 +333,4 @@ const Payment = () => {
     );
 };
 
-export default Payment;
+export default PaymentPage;

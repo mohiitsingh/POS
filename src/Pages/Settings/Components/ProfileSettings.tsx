@@ -5,6 +5,7 @@ import { useAuth } from "../../../Contexts/AuthContext";
 import { useToast } from "../../../Contexts/ToastContext";
 import { Save, ShieldCheck } from "lucide-react";
 import { supabase } from "../../../config/supabase";
+import DOMPurify from "dompurify";
 
 const ProfileSettings = () => {
     const { profile, updateProfile } = useSettings();
@@ -78,12 +79,16 @@ const ProfileSettings = () => {
     };
 
     const handleSave = () => {
+        const firstName = DOMPurify.sanitize(formData.firstName.trim());
+        const lastName = DOMPurify.sanitize(formData.lastName.trim());
+        const mobile = DOMPurify.sanitize(formData.mobile.trim());
+
         // Validation logic could go here
-        if (!formData.firstName) {
-            showError("Name and Email are required");
+        if (!firstName) {
+            showError("First Name is required");
             return;
         }
-        updateProfile(formData);
+        updateProfile({ ...formData, firstName, lastName, mobile });
 
         // Mock password save
         if (passwordData.newPassword) {
