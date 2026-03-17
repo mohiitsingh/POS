@@ -13,7 +13,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
-import logo from "/public/logo.png"
+import logo from "/logo.png"
 import "./LandingPage.css";
 import type { RecommendedPrinter } from "../Printers/PrintersPage";
 import DOMPurify from "dompurify";

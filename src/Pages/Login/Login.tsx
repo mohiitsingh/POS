@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import "./Login.css";
 import BrandingPanel from "../../Components/BrandingPanel/BrandingPanel";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "/public/logo.png";
+import logo from "/logo.png";
 import { useAuth } from "../../Contexts/AuthContext";
 import VerificationDialog from "../../Components/VerificationDialog/VerificationDialog";
+import { ChevronLeft } from "lucide-react";
 
 const Login = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -148,6 +149,9 @@ const Login = () => {
 
   return (
     <div className="auth-page">
+      <Link to="/" className="back-link">
+          <ChevronLeft size={20} /> Back
+        </Link>
       {/* Left Section - Auth Form */}
       <div className="auth-section">
         <div className="auth-container">

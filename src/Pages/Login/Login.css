@@ -242,6 +242,20 @@
   height: 100%;
 }
 
+.back-link {
+  display: inline-flex;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-light);
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 2rem;
+  transition: color 0.2s;
+}
+
 /* --- Responsive --- */
 @media (max-width: 968px) {
   .branding-section {

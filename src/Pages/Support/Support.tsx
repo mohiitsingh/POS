@@ -1,5 +1,5 @@
 import "../Privacy/Privacy.css";
-import { ChevronLeft, Mail, Phone } from "lucide-react";
+import { ChevronLeft, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Support = () => {
@@ -18,12 +18,6 @@ const Support = () => {
             <Mail size={18} color="var(--color-primary)" />
             <a href="mailto:support@arambh.com" style={{ color: 'var(--color-text)', textDecoration: 'none' }}>
               support@arambhonline.com
-            </a>
-          </p>
-          <p style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Phone size={18} color="var(--color-primary)" />
-            <a href="tel:+917224813807" style={{ color: 'var(--color-text)', textDecoration: 'none' }}>
-              +91 7224813807
             </a>
           </p>
         </section>
