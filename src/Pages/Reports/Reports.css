@@ -84,7 +84,7 @@
 .card-icon {
     padding: 1rem;
     border-radius: 50%;
-    background-color: #f0fdf4; /* Light green */
+    background-color: #f0fdf4; 
     color: var(--color-primary);
 }
 

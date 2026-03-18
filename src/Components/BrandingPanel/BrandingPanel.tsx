@@ -7,11 +7,11 @@ const BrandingPanel = () => {
         <div className="branding-panel">
             <div className="branding-content">
                 <h2 className="branding-title">
-                    Effortlessly manage your restaurant
-                    <br /> and operations.
+                    Effortlessly manage your restaurant or cafe
+                    <br /> and it's operations.
                 </h2>
                 <p className="branding-subtitle">
-                    Log in to access your POS dashboard and manage your orders, inventory, and staff.
+                    Log in to access your Arambh dashboard and manage your orders.
                 </p>
 
                 <div className="illustration-container">

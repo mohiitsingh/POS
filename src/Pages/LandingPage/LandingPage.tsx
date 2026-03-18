@@ -13,10 +13,11 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
-import logo from "/logo.png"
+import logo from "/logo.png";
 import "./LandingPage.css";
 import type { RecommendedPrinter } from "../Printers/PrintersPage";
 import DOMPurify from "dompurify";
+import { Helmet } from "react-helmet-async";
 
 interface Plan {
   id: string;
@@ -63,16 +64,22 @@ const LandingPage = () => {
     state: "",
     city: "",
   });
-  const [demoSubmitStatus, setDemoSubmitStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [demoSubmitStatus, setDemoSubmitStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
   const [demoErrorMessage, setDemoErrorMessage] = useState("");
 
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [previewPrinters, setPreviewPrinters] = useState<RecommendedPrinter[]>([]);
+  const [previewPrinters, setPreviewPrinters] = useState<RecommendedPrinter[]>(
+    [],
+  );
 
   useEffect(() => {
     supabase
       .from("plans")
-      .select("id, title, subtitle, badge, badge_class, price_per_month, old_price, discount_label, total_label, features")
+      .select(
+        "id, title, subtitle, badge, badge_class, price_per_month, old_price, discount_label, total_label, features",
+      )
       .then(({ data }) => {
         if (data) setPlans(data as Plan[]);
       });
@@ -109,7 +116,9 @@ const LandingPage = () => {
     const lastSubmitTime = localStorage.getItem("last_demo_request_time");
     if (lastSubmitTime && Date.now() - parseInt(lastSubmitTime) < 30000) {
       setDemoSubmitStatus("error");
-      setDemoErrorMessage("You're doing that too fast. Please wait a minute and try again.");
+      setDemoErrorMessage(
+        "You're doing that too fast. Please wait a minute and try again.",
+      );
       return;
     }
 
@@ -183,11 +192,18 @@ const LandingPage = () => {
 
   return (
     <div className="app">
+      <Helmet>
+        <title>Billing Software for Restaurants in India | Arambh</title>
+        <meta
+          name="description"
+          content="Affordable POS system for restaurants and cafes in India. Generate bills, track sales, and grow your business."
+        />
+      </Helmet>
       {/* Hero Container (Wrapper including Navbar) */}
       <div className="hero-wrapper">
         <nav className={`navbar-floating ${scrolled ? "scrolled" : ""}`}>
           <div className="logo">
-            <img src={logo} alt="Bill Easy" className="logo-img" />
+            <img src={logo} alt="arambh logo" className="logo-img" />
           </div>
           <div className="nav-links">
             <a href="#features">Features</a>
@@ -207,33 +223,36 @@ const LandingPage = () => {
 
         <section className="hero-centered">
           <div className="hero-content-center">
-            <span className="hero-badge-pill">✨ New Launch Offer - Free For 2 Months</span>
+            <span className="hero-badge-pill">
+              ✨ New Launch Offer - Free For 2 Months
+            </span>
             <h1>
               Generate Bills in <br className="break-desktop" />
               <span className="text-highlight">3 Clicks</span>.
             </h1>
             <p>
-              The fastest, most affordable POS for small cafes and restaurants.{" "}
+              The fastest, most affordable POS for Restaurants & Cafes in India.{" "}
               <br className="break-desktop" />
               Handle orders easily and track revenue instantly.
             </p>
 
             <div className="center-actions">
-              {/* <div className="email-input-wrapper">
-              <input type="email" placeholder="Enter your email address" />
-              <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>
-                See a demo <ArrowRight size={14} />
-              </button>
-              </div> */}
               <div className="cta-actions">
-                <button className="btn-white-solid" onClick={() => navigate("/login")}>
-                  Get Started Free <ArrowRight size={18} />
+                <button
+                  className="btn-white-solid"
+                  onClick={() => navigate("/login")}
+                >
+                  Start Free Trial (2 Months Free)
+                  <ArrowRight size={18} />
                 </button>
-                <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>Book a Demo</button>
+                <button
+                  className="btn-transparent"
+                  onClick={() => setIsDemoModalOpen(true)}
+                >
+                  Book a Demo
+                </button>
               </div>
             </div>
-
-
 
             <div className="hero-image-floating">
               {/* Realistic POS Card */}
@@ -280,16 +299,9 @@ const LandingPage = () => {
           </div>
 
           {/* Logos Marquee */}
-          {/* <div className="hero-logos">
-            <span>Trusted by 500+ Cafes</span>
-            <div className="logo-row">
-              <span className="brand-logo">CafeCoffee</span>
-              <span className="brand-logo">BurgerBros</span>
-              <span className="brand-logo">PizzaHut</span>
-              <span className="brand-logo">TacoBell</span>
-              <span className="brand-logo">Starbucks</span>
-            </div>
-          </div> */}
+          <div className="hero-logos">
+            <span>Trusted by 500+ cafes and restaurants across India</span>
+          </div>
         </section>
       </div>
 
@@ -482,8 +494,13 @@ const LandingPage = () => {
 
         <div className="pricing-grid">
           {plans.map((plan) => (
-            <div key={plan.id} className={`pricing-card ${CARD_CLASS[plan.id] ?? "basic"}`}>
-              <div className={`card-badge ${plan.badge_class}`}>{plan.badge}</div>
+            <div
+              key={plan.id}
+              className={`pricing-card ${CARD_CLASS[plan.id] ?? "basic"}`}
+            >
+              <div className={`card-badge ${plan.badge_class}`}>
+                {plan.badge}
+              </div>
               {plan.discount_label && (
                 <div className="discount-pill">{plan.discount_label}</div>
               )}
@@ -499,7 +516,9 @@ const LandingPage = () => {
               </div>
               <ul className="pricing-features">
                 {plan.features.map((f) => (
-                  <li key={f}><Check size={16} /> {f}</li>
+                  <li key={f}>
+                    <Check size={16} /> {f}
+                  </li>
                 ))}
               </ul>
               <button
@@ -570,55 +589,106 @@ const LandingPage = () => {
 
       {/* Recommended Printers Section */}
       {previewPrinters.length > 0 && (
-        <section className="benefits-section" id="printers" style={{ backgroundColor: "var(--color-bg)", padding: "4rem 2rem", borderTop: "1px solid var(--color-border)" }}>
+        <section
+          className="benefits-section"
+          id="printers"
+          style={{
+            backgroundColor: "var(--color-bg)",
+            padding: "4rem 2rem",
+            borderTop: "1px solid var(--color-border)",
+          }}
+        >
           <div className="pricing-grid-header">
             <h2 className="section-title">
               Top <span className="text-gradient">Recommended</span> Printers
             </h2>
-            <p style={{
-              fontSize: "1.1rem",
-              color: "var(--color-text-light)",
-              marginBottom: "3rem",
-              maxWidth: "600px",
-              margin: "0 auto",
-              textAlign: "center"
-            }}>
-              Ensure a seamless billing experience with our tested and verified thermal printers.
+            <p
+              style={{
+                fontSize: "1.1rem",
+                color: "var(--color-text-light)",
+                marginBottom: "3rem",
+                maxWidth: "600px",
+                margin: "0 auto",
+                textAlign: "center",
+              }}
+            >
+              Ensure a seamless billing experience with our tested and verified
+              thermal printers.
             </p>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "2rem",
-              maxWidth: "1000px",
-              margin: "2rem auto",
-              textAlign: "left"
-            }}>
-              {previewPrinters.map(printer => (
-                <div key={printer.id} style={{
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column"
-                }}>
-                  <div style={{ height: "200px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", borderBottom: "1px solid var(--color-border)" }}>
-                    <img src={printer.image_url} alt={printer.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: "2rem",
+                maxWidth: "1000px",
+                margin: "2rem auto",
+                textAlign: "left",
+              }}
+            >
+              {previewPrinters.map((printer) => (
+                <div
+                  key={printer.id}
+                  style={{
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "200px",
+                      background: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "1rem",
+                      borderBottom: "1px solid var(--color-border)",
+                    }}
+                  >
+                    <img
+                      src={printer.image_url}
+                      alt={printer.name}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
                   </div>
-                  <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                    <h3 style={{ fontSize: "1.2rem", marginBottom: "0.5rem", color: "var(--color-text)" }}>{printer.name}</h3>
-                    <p style={{
-                      fontSize: "0.9rem",
-                      color: "var(--color-text-light)",
-                      marginBottom: "1.5rem",
+                  <div
+                    style={{
+                      padding: "1.5rem",
+                      display: "flex",
+                      flexDirection: "column",
                       flexGrow: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: "vertical"
-                    }}>
+                    }}
+                  >
+                    <h3
+                      style={{
+                        fontSize: "1.2rem",
+                        marginBottom: "0.5rem",
+                        color: "var(--color-text)",
+                      }}
+                    >
+                      {printer.name}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "var(--color-text-light)",
+                        marginBottom: "1.5rem",
+                        flexGrow: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                      }}
+                    >
                       {printer.description}
                     </p>
                     <a
@@ -626,7 +696,13 @@ const LandingPage = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-primary-solid"
-                      style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        textDecoration: "none",
+                      }}
                     >
                       Buy Now <ExternalLink size={16} />
                     </a>
@@ -637,7 +713,14 @@ const LandingPage = () => {
 
             <button
               className="btn-outline"
-              style={{ display: "flex", padding: "0.5rem 1rem", borderRadius: "12px", margin: "2rem auto 0", alignItems: "center", gap: "0.5rem" }}
+              style={{
+                display: "flex",
+                padding: "0.5rem 1rem",
+                borderRadius: "12px",
+                margin: "2rem auto 0",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
               onClick={() => navigate("/printers")}
             >
               View More <ArrowRight size={18} />
@@ -662,10 +745,18 @@ const LandingPage = () => {
               Start your 2-month free trial today.
             </p>
             <div className="cta-actions">
-              <button className="btn-white-solid" onClick={() => navigate("/login")}>
-                Get Started Free <ArrowRight size={18} />
+              <button
+                className="btn-white-solid"
+                onClick={() => navigate("/login")}
+              >
+                Start Free Trial (2 Months Free) <ArrowRight size={18} />
               </button>
-              <button className="btn-transparent" onClick={() => setIsDemoModalOpen(true)}>Book a Demo</button>
+              <button
+                className="btn-transparent"
+                onClick={() => setIsDemoModalOpen(true)}
+              >
+                Book a Demo
+              </button>
             </div>
           </div>
 
@@ -706,17 +797,26 @@ const LandingPage = () => {
                 </div>
                 <h3>Request Sent Successfully!</h3>
                 <p>Our team will contact you soon.</p>
-                <button className="btn-primary-solid" onClick={closeDemoModal} style={{ margin: "1rem auto" }}>
+                <button
+                  className="btn-primary-solid"
+                  onClick={closeDemoModal}
+                  style={{ margin: "1rem auto" }}
+                >
                   Got it
                 </button>
               </div>
             ) : (
               <>
                 <h3 className="modal-title">Book a Free Demo</h3>
-                <p className="modal-subtitle">Leave your details and we'll show you how Bill Easy works.</p>
+                <p className="modal-subtitle">
+                  Leave your details and we'll show you how Arambh works.
+                </p>
 
                 {demoSubmitStatus === "error" && (
-                  <div className="error-message" style={{ marginBottom: "1rem" }}>
+                  <div
+                    className="error-message"
+                    style={{ marginBottom: "1rem" }}
+                  >
                     {demoErrorMessage}
                   </div>
                 )}
@@ -729,7 +829,9 @@ const LandingPage = () => {
                       required
                       placeholder="e.g. John Doe"
                       value={demoForm.name}
-                      onChange={(e) => setDemoForm({ ...demoForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setDemoForm({ ...demoForm, name: e.target.value })
+                      }
                     />
                   </div>
                   <div className="form-group">
@@ -739,7 +841,9 @@ const LandingPage = () => {
                       required
                       placeholder="e.g. 9876543210"
                       value={demoForm.phone}
-                      onChange={(e) => setDemoForm({ ...demoForm, phone: e.target.value })}
+                      onChange={(e) =>
+                        setDemoForm({ ...demoForm, phone: e.target.value })
+                      }
                     />
                   </div>
                   <div className="form-group">
@@ -748,28 +852,34 @@ const LandingPage = () => {
                       type="email"
                       placeholder="e.g. john@cafe.com"
                       value={demoForm.email}
-                      onChange={(e) => setDemoForm({ ...demoForm, email: e.target.value })}
+                      onChange={(e) =>
+                        setDemoForm({ ...demoForm, email: e.target.value })
+                      }
                     />
                   </div>
                   {/* <div className="form-row" style={{ display: "flex", gap: "1rem" }}> */}
-                  <div className="form-group" >
+                  <div className="form-group">
                     <label>State *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Maharashtra"
                       value={demoForm.state}
-                      onChange={(e) => setDemoForm({ ...demoForm, state: e.target.value })}
+                      onChange={(e) =>
+                        setDemoForm({ ...demoForm, state: e.target.value })
+                      }
                     />
                   </div>
-                  <div className="form-group" >
+                  <div className="form-group">
                     <label>City *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Mumbai"
                       value={demoForm.city}
-                      onChange={(e) => setDemoForm({ ...demoForm, city: e.target.value })}
+                      onChange={(e) =>
+                        setDemoForm({ ...demoForm, city: e.target.value })
+                      }
                     />
                   </div>
                   {/* </div> */}
@@ -778,9 +888,18 @@ const LandingPage = () => {
                     type="submit"
                     className="btn-primary-solid"
                     disabled={demoSubmitStatus === "submitting"}
-                    style={{ width: "100%", marginTop: "1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "0.5rem" }}
+                    style={{
+                      width: "100%",
+                      marginTop: "1rem",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
                   >
-                    {demoSubmitStatus === "submitting" && <Loader2 size={16} className="spinner" />}
+                    {demoSubmitStatus === "submitting" && (
+                      <Loader2 size={16} className="spinner" />
+                    )}
                     Submit Request
                   </button>
                 </form>

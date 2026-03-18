@@ -94,7 +94,7 @@
 
 .printer-image-container {
     height: 240px;
-    background-color: #ffffff; /* Typically printers have white/transparent background images */
+    background-color: #ffffff; 
     display: flex;
     align-items: center;
     justify-content: center;

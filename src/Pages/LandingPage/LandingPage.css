@@ -161,8 +161,8 @@
 }
 
 .btn-primary-solid {
-  background: #facc15; /* Yellow CTA */
-  color: #022c22; /* Dark Text */
+  background: #facc15; 
+  color: #022c22; 
   padding: 0.75rem 1.5rem;
   border-radius: 99px;
   font-weight: 700;
@@ -274,7 +274,6 @@
 }
 
 .logo-row .brand-logo {
-  /* font-size: 1.25rem; */
   font-weight: 700;
   color: rgba(255, 255, 255, 0.8);
   opacity: 0.6;
@@ -322,7 +321,7 @@
 
 .process-step-card:hover {
   transform: translateY(-15px) scale(1.02);
-  box-shadow: 0 30px 60px rgba(0,0,0,0.08); /* Greenish glow */
+  box-shadow: 0 30px 60px rgba(0,0,0,0.08); 
   border-color: var(--color-primary);
 }
 
@@ -746,7 +745,7 @@
   gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  align-items: stretch; /* Cards same height */
+  align-items: stretch; 
 }
 
 /* Base Pricing Card */
@@ -774,7 +773,7 @@
 }
 
 .pricing-card.pro {
-  border-top: 4px solid #facc15 !important; /* Yellow Top */
+  border-top: 4px solid #facc15 !important;
 }
 
 .pricing-card.elite {

@@ -1,7 +1,3 @@
-/* ============================================
-   Onboarding Modal - Full Screen Overlay
-   ============================================ */
-
 .onboarding-overlay {
   position: fixed;
   inset: 0;
@@ -10,9 +6,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  /* padding: 2rem 1rem 4rem; */
   overflow-y: auto;
-  /* Smooth momentum scroll on iOS */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -23,7 +17,6 @@
   animation: ob-fadein 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Step 2 widens to fit 3 cards */
 .onboarding-container.ob-step2 {
   max-width: 800px;
 }
@@ -33,7 +26,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---- Step Indicator ---- */
 .ob-step-indicator {
   display: flex;
   align-items: center;
@@ -61,7 +53,6 @@
   background: #86efac;
 }
 
-/* ---- White Card Shell ---- */
 .ob-card {
   background: white;
   border-radius: 1.75rem;
@@ -69,7 +60,6 @@
   box-shadow: 0 25px 60px rgba(0,0,0,0.3);
 }
 
-/* ---- Header ---- */
 .ob-header {
   text-align: center;
 }
@@ -106,7 +96,6 @@
   margin: 0 auto;
 }
 
-/* ---- Form ---- */
 .ob-form {
   display: flex;
   flex-direction: column;
@@ -149,7 +138,6 @@
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   outline: none;
   box-sizing: border-box;
-  /* Prevent iOS zoom on focus */
   font-size: max(16px, 0.92rem);
 }
 
@@ -170,7 +158,6 @@
   font-weight: 500;
 }
 
-/* ---- Action Buttons ---- */
 .ob-actions {
   display: flex;
   gap: 0.85rem;
@@ -223,17 +210,11 @@
   color: #111827;
 }
 
-/* ============================================
-   Step 2 – Layout
-   ============================================ */
-
-/* Header strip for step 2 */
 .ob-step2-header {
   margin-bottom: 1.25rem;
   padding: 1rem;
 }
 
-/* Pricing grid: 3 cols on desktop */
 .ob-pricing-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -241,7 +222,6 @@
   margin-bottom: 1.25rem;
 }
 
-/* Action strip below pricing grid */
 .ob-step2-footer {
   background: white;
   border-radius: 1.25rem;
@@ -253,7 +233,6 @@
   margin-top: 0;
 }
 
-/* ---- Pricing Card ---- */
 .ob-pricing-card {
   background: white;
   border-radius: 1.25rem;
@@ -288,7 +267,6 @@
   box-shadow: 0 16px 40px -8px rgba(15, 118, 110, 0.45);
 }
 
-/* Selected state — green ring */
 .ob-pricing-card.ob-selected {
   border: 2px solid #10b981 !important;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22), 0 16px 32px rgba(0,0,0,0.1) !important;
@@ -300,7 +278,6 @@
   box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.35), 0 12px 24px rgba(0,0,0,0.08) !important;
 }
 
-/* Selected checkmark bubble */
 .ob-check-mark {
   position: absolute;
   top: 1rem;
@@ -323,7 +300,6 @@
   transform: scale(1);
 }
 
-/* Card badge (Flexible / Most Popular / Best Value) */
 .ob-card-badge {
   display: inline-block;
   font-size: 0.72rem;
@@ -347,7 +323,6 @@
   color: #a7f3d0;
 }
 
-/* Discount pill (top-right) */
 .ob-discount-pill {
   position: absolute;
   top: 1rem;
@@ -365,7 +340,6 @@
   color: #fff;
 }
 
-/* Card text */
 .ob-card-title {
   font-size: 1.2rem;
   font-weight: 800;
@@ -388,7 +362,6 @@
   color: #99f6e4;
 }
 
-/* Price */
 .ob-price-block {
   display: flex;
   align-items: baseline;
@@ -431,7 +404,6 @@
   align-self: center;
 }
 
-/* Features */
 .ob-features-list {
   list-style: none;
   padding: 0;
@@ -459,7 +431,6 @@
 
 .ob-card-elite .ob-check-icon { color: #6ee7b7; }
 
-/* Plan error banner */
 .ob-plan-error {
   text-align: center;
   color: #ef4444;
@@ -472,11 +443,6 @@
   border: 1px solid #fecaca;
 }
 
-/* ============================================
-   Responsive Breakpoints
-   ============================================ */
-
-/* Tablet: 2-column pricing, slightly compacted */
 @media (max-width: 900px) {
   .onboarding-container.ob-step2 {
     max-width: 680px;
@@ -486,7 +452,6 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Show elite card full-width last */
   .ob-pricing-card.ob-card-elite {
     grid-column: 1 / -1;
     flex-direction: row;
@@ -507,7 +472,6 @@
   }
 }
 
-/* Mobile: single column everything */
 @media (max-width: 600px) {
   .onboarding-overlay {
     padding: 1.25rem 0.75rem 3rem;
@@ -555,7 +519,6 @@
     grid-template-columns: 1fr;
   }
 
-  /* Reset elite card horizontal layout */
   .ob-pricing-card.ob-card-elite {
     flex-direction: column;
     grid-column: auto;
@@ -580,7 +543,6 @@
   }
 }
 
-/* Very small phones */
 @media (max-width: 380px) {
   .ob-card {
     padding: 1.5rem 1rem;
@@ -594,10 +556,6 @@
     font-size: 2.2rem;
   }
 }
-
-/* ============================================
-   Step 3 – Payment Confirmation
-   ============================================ */
 
 .ob-order-summary {
   background: #f9fafb;
@@ -656,7 +614,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* Spinner animation on the Activating button */
 .ob-spinner {
   animation: ob-spin 0.8s linear infinite;
 }

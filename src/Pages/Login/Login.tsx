@@ -6,13 +6,20 @@ import logo from "/logo.png";
 import { useAuth } from "../../Contexts/AuthContext";
 import VerificationDialog from "../../Components/VerificationDialog/VerificationDialog";
 import { ChevronLeft } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 const Login = () => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, resendVerificationEmail, hasPaidSubscription } = useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    resendVerificationEmail,
+    hasPaidSubscription,
+  } = useAuth();
 
   // Form states
   const [formData, setFormData] = useState({
@@ -37,7 +44,11 @@ const Login = () => {
     const { name, value, type, checked } = e.target;
 
     // Prevent spaces in password fields during registration
-    if (!isLoginMode && (name === "password" || name === "confirmPassword") && value.includes(" ")) {
+    if (
+      !isLoginMode &&
+      (name === "password" || name === "confirmPassword") &&
+      value.includes(" ")
+    ) {
       return;
     }
 
@@ -106,7 +117,8 @@ const Login = () => {
         } catch (error: any) {
           if (error.message?.includes("Email not confirmed")) {
             setErrors({
-              email: "Please verify your email before logging in. Check your inbox for the verification link.",
+              email:
+                "Please verify your email before logging in. Check your inbox for the verification link.",
             });
           } else {
             setErrors({
@@ -149,9 +161,16 @@ const Login = () => {
 
   return (
     <div className="auth-page">
+      <Helmet>
+        <title>Affordable Billing Software for Restaurants in India | Arambh</title>
+        <meta
+          name="description"
+          content="Affordable POS system for restaurants and cafes in India. Generate bills, track sales, and grow your business."
+        />
+      </Helmet>
       <Link to="/" className="back-link">
-          <ChevronLeft size={20} /> Back
-        </Link>
+        <ChevronLeft size={20} /> Back
+      </Link>
       {/* Left Section - Auth Form */}
       <div className="auth-section">
         <div className="auth-container">
@@ -184,7 +203,9 @@ const Login = () => {
                     placeholder="John Doe"
                     className={errors.fullName ? "error" : ""}
                   />
-                  {errors.fullName && <span className="error-text">{errors.fullName}</span>}
+                  {errors.fullName && (
+                    <span className="error-text">{errors.fullName}</span>
+                  )}
                 </div>
               )}
 
@@ -200,7 +221,9 @@ const Login = () => {
                   placeholder="name@company.com"
                   className={errors.email ? "error" : ""}
                 />
-                {errors.email && <span className="error-text">{errors.email}</span>}
+                {errors.email && (
+                  <span className="error-text">{errors.email}</span>
+                )}
               </div>
 
               {/* Password */}
@@ -215,7 +238,9 @@ const Login = () => {
                   placeholder="••••••••"
                   className={errors.password ? "error" : ""}
                 />
-                {errors.password && <span className="error-text">{errors.password}</span>}
+                {errors.password && (
+                  <span className="error-text">{errors.password}</span>
+                )}
               </div>
 
               {/* Register: Confirm Password */}
@@ -264,7 +289,11 @@ const Login = () => {
               </div>
 
               <div className="social-buttons">
-                <button type="button" className="btn-social" onClick={signInWithGoogle}>
+                <button
+                  type="button"
+                  className="btn-social"
+                  onClick={signInWithGoogle}
+                >
                   {/* <Chrome size={20} /> */}
                   <img src="/google.svg" alt="Google" className="google-icon" />
                   Google
@@ -274,7 +303,9 @@ const Login = () => {
 
             <div className="auth-footer">
               <p>
-                {isLoginMode ? "Don't have an account? " : "Already have an account? "}
+                {isLoginMode
+                  ? "Don't have an account? "
+                  : "Already have an account? "}
                 <button type="button" onClick={toggleMode} className="btn-link">
                   {isLoginMode ? "Register Now" : "Login"}
                 </button>

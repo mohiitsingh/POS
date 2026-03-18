@@ -91,7 +91,7 @@
 .form-group input:focus {
   border-color: var(--color-primary);
   background-color: var(--color-bg);
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15); /* Primary color with opacity */
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15); 
 }
 
 .form-group input.error {
@@ -152,7 +152,6 @@
 
 .btn-primary-login:hover {
   background-color: var(--color-primary-hover);
-  /* transform: translateY(-1px); */
 }
 
 .btn-primary:active {
@@ -238,7 +237,6 @@
 .branding-section {
   flex: 1;
   display: flex;
-  /* ensure it takes full height */
   height: 100%;
 }
 

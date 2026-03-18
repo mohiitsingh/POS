@@ -278,10 +278,6 @@
         font-size: 0.75rem;
     }
     
-    /* .orders-header {
-        flex-direction: column;
-        align-items: flex-start;
-    } */
     
     .orders-table-container {
         overflow-x: auto;

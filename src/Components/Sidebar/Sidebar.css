@@ -1,5 +1,4 @@
 
-/* Sidebar.css */
 .sidebar {
     width: 260px;
     height: 100vh;
@@ -19,7 +18,6 @@
     width: 80px;
 }
 
-/* 1. Branding Header */
 .sidebar-header {
     margin-bottom: 2rem;
     display: flex;
@@ -41,9 +39,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 165, 0, 0.1); /* Orange tint from reference */
+    background-color: rgba(255, 165, 0, 0.1); 
     border-radius: 8px;
-    color: #f97316; /* Orange color */
+    color: #f97316; 
 }
 
 .logo-icon {
@@ -58,7 +56,6 @@
     display: none
 }
 
-/* 2. User Profile */
 .sidebar-user {
     display: flex;
     align-items: center;
@@ -104,9 +101,8 @@
     white-space: nowrap;
 }
 
-/* 3. Navigation */
 .sidebar-nav {
-    flex: 1; /* Pushes footer to bottom */
+    flex: 1; 
     overflow-y: auto;
 }
 
@@ -135,12 +131,11 @@
 }
 
 .nav-link.active {
-    background-color: var(--color-bg-light); /* Or a very light subtle tint of primary */
-    color: var(--color-text); /* Highlight text primarily */
-    border-left: 3px solid var(--color-text); /* Similar to reference active state */
+    background-color: var(--color-bg-light);
+    color: var(--color-text); 
+    border-left: 3px solid var(--color-text); 
 }
 
-/* 4. Footer / Logout */
 .sidebar-footer {
     padding-top: 1rem;
     border-top: 1px solid var(--color-border);
@@ -167,7 +162,6 @@
     color: #ef4444;
 }
 
-/* Responsive Hidden on Mobile */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);

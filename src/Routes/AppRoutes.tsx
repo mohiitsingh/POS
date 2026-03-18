@@ -49,7 +49,7 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/support" element={<Support />} />
-        <Route path="/printers" element={<PrintersPage />} />
+        <Route path="/thermal-printers" element={<PrintersPage />} />
       </Route>
 
       {/* Email Verification - Public route without redirect */}

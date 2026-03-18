@@ -4,10 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arambh</title>
+    <title>Arambh POS - Smart Billing Software for Restaurants and Cafes</title>
+    <meta
+      name="description"
+      content="Arambh is a simple POS system for small restaurants and cafes in India. Manage billing, orders, and reports easily."
+    />
+    <meta
+      name="keywords"
+      content="POS system India, restaurant billing software, cafe POS, Arambh POS"
+    />
+    <meta name="author" content="Arambh" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Arambh POS",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "699",
+          "priceCurrency": "INR"
+        }
+      }
+    </script>
   </body>
 </html>
