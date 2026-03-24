@@ -29,6 +29,7 @@ interface DemoRequest {
     email: string;
     state: string;
     city: string;
+    request_type?: string;
     status: "pending" | "contacted";
     created_at: string;
 }
@@ -585,6 +586,11 @@ const AdminPage = () => {
                                                 </td>
                                                 <td>
                                                     <strong>{d.name}</strong>
+                                                    {d.request_type === "custom_pos" && (
+                                                        <span style={{ display: "inline-block", marginLeft: "0.5rem", fontSize: "0.7rem", padding: "2px 6px", background: "rgba(var(--color-primary-rgb), 0.1)", color: "var(--color-primary)", border: "1px solid rgba(var(--color-primary-rgb), 0.2)", borderRadius: "12px", verticalAlign: "middle" }}>
+                                                            Custom POS
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <strong>{d.phone}</strong>

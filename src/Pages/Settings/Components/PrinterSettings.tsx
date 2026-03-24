@@ -507,9 +507,6 @@ const PrinterSettings = () => {
                         <li>Open terminal and run <strong>node install-service.js</strong></li>
                         <li>Come back here and click <strong>Refresh</strong></li>
                     </ol>
-                    <p style={{ marginTop: '8px' }}>
-                        💡 <strong>Tip:</strong> Install <a href="https://www.sumatrapdfreader.org/" target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>SumatraPDF</a> for the most reliable silent printing on thermal printers.
-                    </p>
                 </details>
             )}
 

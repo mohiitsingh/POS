@@ -400,6 +400,12 @@
   align-items: center;
 }
 
+.customisable-section{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .feature-card {
   background: white;
   padding: 1.5rem;

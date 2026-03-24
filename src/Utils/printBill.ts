@@ -169,8 +169,16 @@ function buildBillHtml(data: BillPrintData): string {
   .summary-row { display: flex; justify-content: space-between; padding: 2px 0; }
   .total-row   { font-weight: bold; font-size: calc(${fs} + 2px); border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }
   @media print {
-    @page { margin: 0; }
-    body  { margin: 0 auto; padding: 4px 0; }
+    @page { 
+        margin: 0;
+        size: ${data.paperSize} auto;
+    }
+    body  { 
+        margin: 0 auto; 
+        padding: 0; 
+        width: ${data.paperSize}; 
+        min-height: calc(${data.paperSize} + 10mm); /* Force Portrait */
+    }
   }
 </style>
 </head>
@@ -275,8 +283,16 @@ function buildKOTHtml(data: KOTData): string {
   table   { width: 100%; border-collapse: collapse; }
   td      { vertical-align: middle; }
   @media print {
-    @page { margin: 0; }
-    body  { margin: 0 auto; padding: 4px 0; }
+    @page { 
+        margin: 0;
+        size: ${data.paperSize} auto;
+    }
+    body  { 
+        margin: 0 auto; 
+        padding: 0; 
+        width: ${data.paperSize}; 
+        min-height: calc(${data.paperSize} + 10mm); /* Force Portrait to prevent browser auto-rotation */
+    }
   }
 </style>
 </head>

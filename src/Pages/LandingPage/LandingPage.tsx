@@ -57,6 +57,7 @@ const LandingPage = () => {
 
   // Demo Modal State
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [demoFormType, setDemoFormType] = useState<"demo" | "custom_pos">("demo");
   const [demoForm, setDemoForm] = useState({
     name: "",
     phone: "",
@@ -170,6 +171,7 @@ const LandingPage = () => {
           email: sEmail,
           state: sState,
           city: sCity,
+          request_type: demoFormType,
         },
       ]);
 
@@ -184,10 +186,16 @@ const LandingPage = () => {
     }
   };
 
+  const openDemoModal = (type: "demo" | "custom_pos" = "demo") => {
+    setDemoFormType(type);
+    setIsDemoModalOpen(true);
+  };
+
   const closeDemoModal = () => {
     setIsDemoModalOpen(false);
     setDemoSubmitStatus("idle");
     setDemoForm({ name: "", phone: "", email: "", state: "", city: "" });
+    setDemoFormType("demo");
   };
 
   return (
@@ -554,11 +562,15 @@ const LandingPage = () => {
             },
             {
               q: "Do I need special hardware?",
-              a: "No, it works on standard devices (laptops, tablets, phones) and connects with most standard thermal printers.",
+              a: "No, it works on standard devices(laptop or desktop) and connects with most standard thermal printers.",
             },
             {
               q: "Is my business data secure?",
               a: "Yes, we use enterprise-grade cloud security with regular backups to ensure your data is always safe and accessible.",
+            },
+            {
+              q: "Can I customise the software according to my need?",
+              a: "Yes, we provide 100% customisation, for that you need to contact us by filling the form. And our team will contact.",
             },
           ].map((item, i) => (
             <div className="faq-item" key={i}>
@@ -721,13 +733,30 @@ const LandingPage = () => {
                 alignItems: "center",
                 gap: "0.5rem",
               }}
-              onClick={() => navigate("/printers")}
+              onClick={() => navigate("/thermal-printers")}
             >
               View More <ArrowRight size={18} />
             </button>
           </div>
         </section>
       )}
+{/* Customizable POS Section */}
+      <section className="features-section customisable-section" >
+        <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+          <span className="badge-pill-white" style={{ background: "rgba(var(--color-primary-rgb), 0.1)", color: "var(--color-primary)", border: "1px solid rgba(var(--color-primary-rgb), 0.2)" }}>
+            <ChefHat size={14} style={{ display: "inline-block", verticalAlign: "middle" }} /> Enterprise Solution
+          </span>
+          <h2 className="section-title" style={{ marginTop: "1rem" }}>
+            Need a <span className="text-gradient">Customizable POS</span>?
+          </h2>
+          <p style={{ color: "var(--color-text-light)", fontSize: "1.1rem", marginBottom: "1rem" }}>
+            Want to own the software for your business? We offer fully customizable POS solutions tailored to your specific workflow, branding, and hardware requirements.
+          </p>
+          <button className="btn-primary-solid" onClick={() => openDemoModal("custom_pos")} style={{ padding: "0.75rem 2rem", fontSize: "1.1rem" }}>
+            Request Custom POS <ArrowRight size={18} style={{ marginLeft: "0.5rem", display: "inline-block", verticalAlign: "middle" }} />
+          </button>
+        </div>
+      </section>
 
       {/* CTA Banner Area */}
       <section className="cta-section-wrapper">
