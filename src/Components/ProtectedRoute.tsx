@@ -1,21 +1,37 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
+import "./Skeleton.css";
 
 const ProtectedRoute = () => {
     const { user, loading, hasPaidSubscription, subscriptionLoading, isFreeTrialActive } = useAuth();
 
     if (loading || subscriptionLoading) {
         return (
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                fontSize: '1.2rem',
-                color: 'var(--primary-color)'
-            }}>
-                Loading...
-            </div>
+            <div className="skeleton-grid">
+      {[1, 2, 3].map((item) => (
+        <div key={item} className="skeleton-card">
+          <div className="skeleton badge"></div>
+
+          <div className="skeleton title"></div>
+
+          <div className="skeleton text"></div>
+          <div className="skeleton text short"></div>
+
+          <div className="skeleton price"></div>
+
+          <div className="features">
+            {[1, 2, 3, 4].map((feature) => (
+              <div
+                key={feature}
+                className="skeleton feature"
+              ></div>
+            ))}
+          </div>
+
+          <div className="skeleton button"></div>
+        </div>
+      ))}
+    </div>
         );
     }
 
