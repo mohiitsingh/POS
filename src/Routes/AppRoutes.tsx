@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Login from "../Pages/Login/Login";
 import LandingPage from "../Pages/LandingPage/LandingPage";
+import HomeHub from "../Pages/HomeHub/HomeHub";
+import PinterestLanding from "../Pages/Pinterest/PinterestLanding";
+import PinterestIndex from "../Pages/Pinterest/PinterestIndex";
 import DashboardLayout from "../Layouts/DashboardLayout/DashboardLayout";
 import Dashboard from "../Pages/Dashboard/Dashboard";
 import MenuManagement from "../Pages/MenuManagement/MenuManagement";
@@ -42,9 +45,14 @@ const SubscribedProviders = () => (
 const AppRoutes = () => {
   return (
     <Routes>
+      {/* Fully Public Routes — no auth redirect, accessible to everyone */}
+      <Route path="/" element={<HomeHub />} />
+      <Route path="/pin" element={<PinterestIndex />} />
+      <Route path="/pin/:slug" element={<PinterestLanding />} />
+
       {/* Public Routes - Redirect to dashboard if already logged in */}
       <Route element={<PublicRoute />}>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/pos" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />

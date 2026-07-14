@@ -214,6 +214,7 @@ const LandingPage = () => {
             <img src={logo} alt="arambh logo" className="logo-img" />
           </div>
           <div className="nav-links">
+            <a href="/">Home</a>
             <a href="#features">Features</a>
             <a href="#how-it-works">How it Works</a>
             <a href="#pricing">Pricing</a>

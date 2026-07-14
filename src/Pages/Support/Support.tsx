@@ -16,8 +16,8 @@ const Support = () => {
           <h2>Contact Us</h2>
           <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
             <Mail size={18} color="var(--color-primary)" />
-            <a href="mailto:support@arambh.com" style={{ color: 'var(--color-text)', textDecoration: 'none' }}>
-              support@arambhonline.com
+            <a href="mailto:support@arambh.in" style={{ color: 'var(--color-text)', textDecoration: 'none' }}>
+              support@arambhonline.in
             </a>
           </p>
         </section>

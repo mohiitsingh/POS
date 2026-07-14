@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../Contexts/AuthContext";
 import { supabase } from "../../config/supabase";
-import { Loader2, CheckCircle, XCircle, ExternalLink, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ExternalLink, RefreshCw, Plus, Trash2, Copy, Eye, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 import "./Admin.css";
@@ -46,6 +46,78 @@ interface RecommendedPrinter {
     created_at: string;
 }
 
+// ── Pinterest Types ──
+interface PinProduct {
+    name: string;
+    image_url: string;
+    price: string;
+    tag: "winner" | "runner_up" | "budget" | "";
+    review: string;
+    buy_link: string;
+}
+
+interface PinSection {
+    section_title: string;
+    products: PinProduct[];
+}
+
+interface PinComparisonRow {
+    feature: string;
+    products: Record<string, string>;
+}
+
+interface PinterestPage {
+    id: string;
+    slug: string;
+    meta_title: string;
+    meta_description: string;
+    show_hero: boolean;
+    show_products: boolean;
+    show_comparison: boolean;
+    show_email_section: boolean;
+    show_footer: boolean;
+    hero_title: string;
+    hero_subtitle: string;
+    hero_image_url: string;
+    pinterest_pin_url: string;
+    sections: PinSection[];
+    comparison_data: PinComparisonRow[];
+    is_published: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+// ── Empty templates ──
+const emptyProduct = (): PinProduct => ({
+    name: "", image_url: "", price: "", tag: "", review: "", buy_link: ""
+});
+
+const emptySection = (): PinSection => ({
+    section_title: "", products: [emptyProduct()]
+});
+
+const emptyComparisonRow = (): PinComparisonRow => ({
+    feature: "", products: {}
+});
+
+const emptyPinterestPage = (): Omit<PinterestPage, "id" | "created_at" | "updated_at"> => ({
+    slug: "",
+    meta_title: "",
+    meta_description: "",
+    show_hero: true,
+    show_products: true,
+    show_comparison: true,
+    show_email_section: true,
+    show_footer: true,
+    hero_title: "",
+    hero_subtitle: "",
+    hero_image_url: "",
+    pinterest_pin_url: "",
+    sections: [emptySection()],
+    comparison_data: [],
+    is_published: true,
+});
+
 const AdminPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -56,7 +128,7 @@ const AdminPage = () => {
     const [notes, setNotes] = useState<Record<string, string>>({});
 
     // Demo Requests State
-    const [currentView, setCurrentView] = useState<"payments" | "demos" | "printers">("payments");
+    const [currentView, setCurrentView] = useState<"payments" | "demos" | "printers" | "pinterest">("payments");
     const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
     const [demoFilter, setDemoFilter] = useState<DemoFilter>("pending");
     const [demoProcessingId, setDemoProcessingId] = useState<string | null>(null);
@@ -67,6 +139,15 @@ const AdminPage = () => {
     const [printerForm, setPrinterForm] = useState({ name: "", image_url: "", description: "", buy_link: "" });
     const [printerSubmitStatus, setPrinterSubmitStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
     const [printerProcessingId, setPrinterProcessingId] = useState<string | null>(null);
+
+    // ── Pinterest State ──
+    const [pinPages, setPinPages] = useState<PinterestPage[]>([]);
+    const [pinEditorOpen, setPinEditorOpen] = useState(false);
+    const [pinEditingId, setPinEditingId] = useState<string | null>(null);
+    const [pinForm, setPinForm] = useState(emptyPinterestPage());
+    const [pinSubmitStatus, setPinSubmitStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+    const [pinProcessingId, setPinProcessingId] = useState<string | null>(null);
+    const [pinExpandedSections, setPinExpandedSections] = useState<Set<number>>(new Set([0]));
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -107,6 +188,19 @@ const AdminPage = () => {
         setLoading(false);
     }, []);
 
+    const fetchPinPages = useCallback(async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from("pinterest_pages")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (!error && data) {
+            setPinPages(data as PinterestPage[]);
+        }
+        setLoading(false);
+    }, []);
+
     useEffect(() => {
         if (currentView === "payments") {
             fetchData();
@@ -114,8 +208,10 @@ const AdminPage = () => {
             fetchDemoRequests();
         } else if (currentView === "printers") {
             fetchPrinters();
+        } else if (currentView === "pinterest") {
+            fetchPinPages();
         }
-    }, [currentView, fetchData, fetchDemoRequests, fetchPrinters]);
+    }, [currentView, fetchData, fetchDemoRequests, fetchPrinters, fetchPinPages]);
 
     const handleAction = async (verificationId: string, action: "approve" | "reject") => {
         if (processingId) return;
@@ -225,6 +321,234 @@ const AdminPage = () => {
         }
     };
 
+    // ── Pinterest Handlers ──
+    const generateSlug = (title: string) => {
+        return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .slice(0, 80);
+    };
+
+    const openPinEditor = (page?: PinterestPage) => {
+        if (page) {
+            setPinEditingId(page.id);
+            setPinForm({
+                slug: page.slug,
+                meta_title: page.meta_title,
+                meta_description: page.meta_description || "",
+                show_hero: page.show_hero,
+                show_products: page.show_products,
+                show_comparison: page.show_comparison,
+                show_email_section: page.show_email_section,
+                show_footer: page.show_footer,
+                hero_title: page.hero_title || "",
+                hero_subtitle: page.hero_subtitle || "",
+                hero_image_url: page.hero_image_url || "",
+                pinterest_pin_url: page.pinterest_pin_url || "",
+                sections: page.sections && page.sections.length > 0 ? page.sections : [emptySection()],
+                comparison_data: page.comparison_data || [],
+                is_published: page.is_published,
+            });
+        } else {
+            setPinEditingId(null);
+            setPinForm(emptyPinterestPage());
+        }
+        setPinEditorOpen(true);
+        setPinSubmitStatus("idle");
+        setPinExpandedSections(new Set([0]));
+    };
+
+    const closePinEditor = () => {
+        setPinEditorOpen(false);
+        setPinEditingId(null);
+        setPinForm(emptyPinterestPage());
+        setPinSubmitStatus("idle");
+    };
+
+    const handlePinSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!pinForm.slug.trim() || !pinForm.meta_title.trim()) {
+            alert("Slug and Meta Title are required.");
+            return;
+        }
+
+        setPinSubmitStatus("submitting");
+
+        const payload = {
+            slug: DOMPurify.sanitize(pinForm.slug.trim()),
+            meta_title: DOMPurify.sanitize(pinForm.meta_title.trim()),
+            meta_description: DOMPurify.sanitize(pinForm.meta_description.trim()) || null,
+            show_hero: pinForm.show_hero,
+            show_products: pinForm.show_products,
+            show_comparison: pinForm.show_comparison,
+            show_email_section: pinForm.show_email_section,
+            show_footer: pinForm.show_footer,
+            hero_title: DOMPurify.sanitize(pinForm.hero_title.trim()) || null,
+            hero_subtitle: DOMPurify.sanitize(pinForm.hero_subtitle.trim()) || null,
+            hero_image_url: pinForm.hero_image_url.trim() || null,
+            pinterest_pin_url: pinForm.pinterest_pin_url.trim() || null,
+            sections: pinForm.sections,
+            comparison_data: pinForm.comparison_data,
+            is_published: pinForm.is_published,
+            updated_at: new Date().toISOString(),
+        };
+
+        try {
+            if (pinEditingId) {
+                const { error } = await supabase
+                    .from("pinterest_pages")
+                    .update(payload)
+                    .eq("id", pinEditingId);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from("pinterest_pages")
+                    .insert([payload]);
+                if (error) throw error;
+            }
+
+            setPinSubmitStatus("success");
+            closePinEditor();
+            fetchPinPages();
+        } catch (err: any) {
+            console.error("Pinterest save failed:", err);
+            setPinSubmitStatus("error");
+            alert("Save failed: " + (err.message || JSON.stringify(err)));
+        }
+    };
+
+    const handlePinDelete = async (id: string) => {
+        if (!window.confirm("Delete this Pinterest page? This cannot be undone.")) return;
+        setPinProcessingId(id);
+
+        try {
+            const { error } = await supabase.from("pinterest_pages").delete().eq("id", id);
+            if (error) throw error;
+            setPinPages((prev) => prev.filter((p) => p.id !== id));
+        } catch (err: any) {
+            alert("Delete failed: " + (err.message || JSON.stringify(err)));
+        } finally {
+            setPinProcessingId(null);
+        }
+    };
+
+    const handlePinDuplicate = async (page: PinterestPage) => {
+        setPinProcessingId(page.id);
+        try {
+            const { error } = await supabase.from("pinterest_pages").insert([{
+                slug: page.slug + "-copy-" + Date.now().toString(36),
+                meta_title: page.meta_title + " (Copy)",
+                meta_description: page.meta_description,
+                show_hero: page.show_hero,
+                show_products: page.show_products,
+                show_comparison: page.show_comparison,
+                show_email_section: page.show_email_section,
+                show_footer: page.show_footer,
+                hero_title: page.hero_title,
+                hero_subtitle: page.hero_subtitle,
+                hero_image_url: page.hero_image_url,
+                pinterest_pin_url: page.pinterest_pin_url,
+                sections: page.sections,
+                comparison_data: page.comparison_data,
+                is_published: false,
+            }]);
+            if (error) throw error;
+            fetchPinPages();
+        } catch (err: any) {
+            alert("Duplicate failed: " + (err.message || JSON.stringify(err)));
+        } finally {
+            setPinProcessingId(null);
+        }
+    };
+
+    // ── Pinterest form helpers ──
+    const updateSection = (idx: number, field: keyof PinSection, value: any) => {
+        const updated = [...pinForm.sections];
+        (updated[idx] as any)[field] = value;
+        setPinForm({ ...pinForm, sections: updated });
+    };
+
+    const addSection = () => {
+        const newSections = [...pinForm.sections, emptySection()];
+        setPinForm({ ...pinForm, sections: newSections });
+        setPinExpandedSections(new Set([...pinExpandedSections, newSections.length - 1]));
+    };
+
+    const removeSection = (idx: number) => {
+        if (pinForm.sections.length <= 1) return;
+        const updated = pinForm.sections.filter((_, i) => i !== idx);
+        setPinForm({ ...pinForm, sections: updated });
+    };
+
+    const updateProduct = (sIdx: number, pIdx: number, field: keyof PinProduct, value: string) => {
+        const updated = [...pinForm.sections];
+        (updated[sIdx].products[pIdx] as any)[field] = value;
+        setPinForm({ ...pinForm, sections: updated });
+    };
+
+    const addProduct = (sIdx: number) => {
+        const updated = [...pinForm.sections];
+        updated[sIdx].products.push(emptyProduct());
+        setPinForm({ ...pinForm, sections: updated });
+    };
+
+    const removeProduct = (sIdx: number, pIdx: number) => {
+        if (pinForm.sections[sIdx].products.length <= 1) return;
+        const updated = [...pinForm.sections];
+        updated[sIdx].products = updated[sIdx].products.filter((_, i) => i !== pIdx);
+        setPinForm({ ...pinForm, sections: updated });
+    };
+
+    const addComparisonRow = () => {
+        setPinForm({
+            ...pinForm,
+            comparison_data: [...pinForm.comparison_data, emptyComparisonRow()]
+        });
+    };
+
+    const removeComparisonRow = (idx: number) => {
+        setPinForm({
+            ...pinForm,
+            comparison_data: pinForm.comparison_data.filter((_, i) => i !== idx)
+        });
+    };
+
+    const updateComparisonRow = (idx: number, field: "feature", value: string) => {
+        const updated = [...pinForm.comparison_data];
+        updated[idx][field] = value;
+        setPinForm({ ...pinForm, comparison_data: updated });
+    };
+
+    const updateComparisonProduct = (rowIdx: number, productName: string, value: string) => {
+        const updated = [...pinForm.comparison_data];
+        updated[rowIdx].products = { ...updated[rowIdx].products, [productName]: value };
+        setPinForm({ ...pinForm, comparison_data: updated });
+    };
+
+    // Get all product names from sections for comparison table
+    const allProductNamesFromSections = (): string[] => {
+        const names = new Set<string>();
+        pinForm.sections.forEach((s) => {
+            s.products.forEach((p) => {
+                if (p.name.trim()) names.add(p.name.trim());
+            });
+        });
+        return Array.from(names);
+    };
+
+    const toggleSectionExpanded = (idx: number) => {
+        const newSet = new Set(pinExpandedSections);
+        if (newSet.has(idx)) {
+            newSet.delete(idx);
+        } else {
+            newSet.add(idx);
+        }
+        setPinExpandedSections(newSet);
+    };
+
     const paymentCounts = {
         all: verifications.length,
         pending: verifications.filter((v) => v.status === "pending").length,
@@ -267,7 +591,7 @@ const AdminPage = () => {
             </div>
 
             <div className="admin-content">
-                <div className="admin-view-toggle" style={{ marginBottom: "2rem", display: "flex", gap: "1rem" }}>
+                <div className="admin-view-toggle" style={{ marginBottom: "2rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
                     <button
                         className={`admin-filter-btn ${currentView === "payments" ? "active" : ""}`}
                         onClick={() => setCurrentView("payments")}
@@ -286,6 +610,12 @@ const AdminPage = () => {
                     >
                         Printers
                     </button>
+                    <button
+                        className={`admin-filter-btn ${currentView === "pinterest" ? "active" : ""}`}
+                        onClick={() => setCurrentView("pinterest")}
+                    >
+                        Pinterest Pages
+                    </button>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
@@ -294,11 +624,13 @@ const AdminPage = () => {
                             {currentView === "payments" && "Payment Verifications"}
                             {currentView === "demos" && "Demo Requests"}
                             {currentView === "printers" && "Recommended Printers"}
+                            {currentView === "pinterest" && "Pinterest Pages"}
                         </h1>
                         <p className="admin-page-subtitle">
                             {currentView === "payments" && "Review and approve UPI payment submissions from users."}
                             {currentView === "demos" && "Manage demo requests from the landing page. Reach out to potential customers."}
                             {currentView === "printers" && "Manage the recommended thermal printers displayed to users."}
+                            {currentView === "pinterest" && "Create and manage Pinterest landing pages. Each page is instantly live at /pin/slug."}
                         </p>
                     </div>
                     {currentView === "printers" && (
@@ -308,6 +640,15 @@ const AdminPage = () => {
                             style={{ whiteSpace: "nowrap" }}
                         >
                             {isAddPrinterOpen ? "Close Form" : "+ Add Printer"}
+                        </button>
+                    )}
+                    {currentView === "pinterest" && (
+                        <button
+                            className="btn-primary-solid"
+                            onClick={() => openPinEditor()}
+                            style={{ whiteSpace: "nowrap" }}
+                        >
+                            + Create Page
                         </button>
                     )}
                 </div>
@@ -354,6 +695,364 @@ const AdminPage = () => {
                     </div>
                 )}
 
+                {/* ── Pinterest Editor ── */}
+                {currentView === "pinterest" && pinEditorOpen && (
+                    <div className="pin-editor-panel">
+                        <div className="pin-editor-header">
+                            <h3>{pinEditingId ? "Edit Pinterest Page" : "Create New Pinterest Page"}</h3>
+                            <button className="admin-action-btn reject" onClick={closePinEditor}>
+                                <XCircle size={13} /> Close
+                            </button>
+                        </div>
+
+                        <form onSubmit={handlePinSubmit} className="pin-editor-form">
+                            {/* Basic Info */}
+                            <div className="pin-editor-group">
+                                <h4>Basic Info</h4>
+                                <div className="pin-editor-row">
+                                    <div className="pin-editor-field">
+                                        <label>Meta Title *</label>
+                                        <input
+                                            type="text" required
+                                            placeholder="e.g. Best Thermal Printers 2026"
+                                            value={pinForm.meta_title}
+                                            onChange={(e) => {
+                                                setPinForm({ ...pinForm, meta_title: e.target.value });
+                                                if (!pinEditingId && !pinForm.slug) {
+                                                    setPinForm(prev => ({ ...prev, meta_title: e.target.value, slug: generateSlug(e.target.value) }));
+                                                }
+                                            }}
+                                            className="admin-note-input"
+                                        />
+                                    </div>
+                                    <div className="pin-editor-field">
+                                        <label>URL Slug *</label>
+                                        <input
+                                            type="text" required
+                                            placeholder="best-thermal-printers"
+                                            value={pinForm.slug}
+                                            onChange={(e) => setPinForm({ ...pinForm, slug: generateSlug(e.target.value) })}
+                                            className="admin-note-input"
+                                        />
+                                        <small style={{ color: "#64748b" }}>Live at: /pin/{pinForm.slug || "..."}</small>
+                                    </div>
+                                </div>
+                                <div className="pin-editor-field">
+                                    <label>Meta Description</label>
+                                    <textarea
+                                        placeholder="SEO description for search engines"
+                                        value={pinForm.meta_description}
+                                        onChange={(e) => setPinForm({ ...pinForm, meta_description: e.target.value })}
+                                        className="admin-note-input"
+                                        style={{ resize: "vertical", minHeight: "60px", fontFamily: "inherit" }}
+                                    />
+                                </div>
+                                <div className="pin-editor-field">
+                                    <label>Pinterest Pin URL</label>
+                                    <input
+                                        type="url"
+                                        placeholder="https://pin.it/..."
+                                        value={pinForm.pinterest_pin_url}
+                                        onChange={(e) => setPinForm({ ...pinForm, pinterest_pin_url: e.target.value })}
+                                        className="admin-note-input"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Section Toggles */}
+                            <div className="pin-editor-group">
+                                <h4>Section Visibility</h4>
+                                <div className="pin-toggle-grid">
+                                    {([
+                                        ["show_hero", "Hero Section"],
+                                        ["show_products", "Product Sections"],
+                                        ["show_comparison", "Comparison Table"],
+                                        ["show_email_section", "Email Section"],
+                                        ["show_footer", "Footer"],
+                                    ] as [keyof typeof pinForm, string][]).map(([key, label]) => (
+                                        <label key={key} className="pin-toggle-item">
+                                            <input
+                                                type="checkbox"
+                                                checked={pinForm[key] as boolean}
+                                                onChange={(e) => setPinForm({ ...pinForm, [key]: e.target.checked })}
+                                            />
+                                            <span>{label}</span>
+                                        </label>
+                                    ))}
+                                    <label className="pin-toggle-item">
+                                        <input
+                                            type="checkbox"
+                                            checked={pinForm.is_published}
+                                            onChange={(e) => setPinForm({ ...pinForm, is_published: e.target.checked })}
+                                        />
+                                        <span style={{ color: pinForm.is_published ? "#22c55e" : "#ef4444" }}>
+                                            {pinForm.is_published ? "Published" : "Draft"}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Hero Section */}
+                            {pinForm.show_hero && (
+                                <div className="pin-editor-group">
+                                    <h4>Hero Section</h4>
+                                    <div className="pin-editor-row">
+                                        <div className="pin-editor-field">
+                                            <label>Hero Title</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Best Thermal Printers for 2026"
+                                                value={pinForm.hero_title}
+                                                onChange={(e) => setPinForm({ ...pinForm, hero_title: e.target.value })}
+                                                className="admin-note-input"
+                                            />
+                                        </div>
+                                        <div className="pin-editor-field">
+                                            <label>Hero Image URL</label>
+                                            <input
+                                                type="url"
+                                                placeholder="https://..."
+                                                value={pinForm.hero_image_url}
+                                                onChange={(e) => setPinForm({ ...pinForm, hero_image_url: e.target.value })}
+                                                className="admin-note-input"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="pin-editor-field">
+                                        <label>Hero Subtitle</label>
+                                        <textarea
+                                            placeholder="A brief description under the hero title"
+                                            value={pinForm.hero_subtitle}
+                                            onChange={(e) => setPinForm({ ...pinForm, hero_subtitle: e.target.value })}
+                                            className="admin-note-input"
+                                            style={{ resize: "vertical", minHeight: "60px", fontFamily: "inherit" }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Product Sections */}
+                            {pinForm.show_products && (
+                                <div className="pin-editor-group">
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <h4>Product Sections ({pinForm.sections.length})</h4>
+                                        <button type="button" className="admin-action-btn approve" onClick={addSection}>
+                                            <Plus size={13} /> Add Section
+                                        </button>
+                                    </div>
+
+                                    {pinForm.sections.map((section, sIdx) => (
+                                        <div key={sIdx} className="pin-section-editor">
+                                            <div className="pin-section-editor-header" onClick={() => toggleSectionExpanded(sIdx)}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                    <GripVertical size={14} style={{ color: "#475569" }} />
+                                                    <span style={{ fontWeight: 600 }}>
+                                                        {section.section_title || `Section ${sIdx + 1}`}
+                                                    </span>
+                                                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                                                        ({section.products.length} product{section.products.length !== 1 ? "s" : ""})
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                                                    {pinForm.sections.length > 1 && (
+                                                        <button type="button" className="admin-action-btn reject" onClick={(e) => { e.stopPropagation(); removeSection(sIdx); }} style={{ padding: "0.2rem 0.5rem" }}>
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
+                                                    {pinExpandedSections.has(sIdx) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                </div>
+                                            </div>
+
+                                            {pinExpandedSections.has(sIdx) && (
+                                                <div className="pin-section-editor-body">
+                                                    <div className="pin-editor-field">
+                                                        <label>Section Title</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="e.g. Best Thermal Printers for Restaurants"
+                                                            value={section.section_title}
+                                                            onChange={(e) => updateSection(sIdx, "section_title", e.target.value)}
+                                                            className="admin-note-input"
+                                                        />
+                                                    </div>
+
+                                                    {section.products.map((product, pIdx) => (
+                                                        <div key={pIdx} className="pin-product-editor">
+                                                            <div className="pin-product-editor-header">
+                                                                <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                                                                    {product.name || `Product ${pIdx + 1}`}
+                                                                </span>
+                                                                {section.products.length > 1 && (
+                                                                    <button type="button" className="admin-action-btn reject" onClick={() => removeProduct(sIdx, pIdx)} style={{ padding: "0.2rem 0.5rem" }}>
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <div className="pin-editor-row">
+                                                                <div className="pin-editor-field">
+                                                                    <label>Product Name *</label>
+                                                                    <input
+                                                                        type="text" required
+                                                                        placeholder="e.g. Retsol RTP-80"
+                                                                        value={product.name}
+                                                                        onChange={(e) => updateProduct(sIdx, pIdx, "name", e.target.value)}
+                                                                        className="admin-note-input"
+                                                                    />
+                                                                </div>
+                                                                <div className="pin-editor-field">
+                                                                    <label>Price *</label>
+                                                                    <input
+                                                                        type="text" required
+                                                                        placeholder="e.g. ₹4,500"
+                                                                        value={product.price}
+                                                                        onChange={(e) => updateProduct(sIdx, pIdx, "price", e.target.value)}
+                                                                        className="admin-note-input"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="pin-editor-row">
+                                                                <div className="pin-editor-field">
+                                                                    <label>Image URL</label>
+                                                                    <input
+                                                                        type="url"
+                                                                        placeholder="https://..."
+                                                                        value={product.image_url}
+                                                                        onChange={(e) => updateProduct(sIdx, pIdx, "image_url", e.target.value)}
+                                                                        className="admin-note-input"
+                                                                    />
+                                                                </div>
+                                                                <div className="pin-editor-field">
+                                                                    <label>Tag</label>
+                                                                    <select
+                                                                        value={product.tag}
+                                                                        onChange={(e) => updateProduct(sIdx, pIdx, "tag", e.target.value)}
+                                                                        className="admin-note-input"
+                                                                    >
+                                                                        <option value="">None</option>
+                                                                        <option value="winner">🏆 Winner</option>
+                                                                        <option value="runner_up">🥈 Runner-up</option>
+                                                                        <option value="budget">💰 Budget Pick</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div className="pin-editor-field">
+                                                                <label>Review (max 2 lines)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="e.g. Great for small cafes, fast printing speed"
+                                                                    value={product.review}
+                                                                    onChange={(e) => updateProduct(sIdx, pIdx, "review", e.target.value)}
+                                                                    className="admin-note-input"
+                                                                    maxLength={150}
+                                                                />
+                                                            </div>
+                                                            <div className="pin-editor-field">
+                                                                <label>Amazon Buy Link *</label>
+                                                                <input
+                                                                    type="url" required
+                                                                    placeholder="https://amazon.in/..."
+                                                                    value={product.buy_link}
+                                                                    onChange={(e) => updateProduct(sIdx, pIdx, "buy_link", e.target.value)}
+                                                                    className="admin-note-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <button type="button" className="admin-action-btn approve" onClick={() => addProduct(sIdx)} style={{ marginTop: "0.5rem" }}>
+                                                        <Plus size={13} /> Add Product
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Comparison Table */}
+                            {pinForm.show_comparison && (
+                                <div className="pin-editor-group">
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <h4>Comparison Table</h4>
+                                        <button type="button" className="admin-action-btn approve" onClick={addComparisonRow}>
+                                            <Plus size={13} /> Add Row
+                                        </button>
+                                    </div>
+
+                                    {allProductNamesFromSections().length === 0 && (
+                                        <p style={{ color: "#64748b", fontSize: "0.85rem" }}>
+                                            Add products above first. Product names will appear as columns here.
+                                        </p>
+                                    )}
+
+                                    {pinForm.comparison_data.length > 0 && allProductNamesFromSections().length > 0 && (
+                                        <div style={{ overflowX: "auto" }}>
+                                            <table className="admin-table" style={{ minWidth: "auto" }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Feature</th>
+                                                        {allProductNamesFromSections().map((name) => (
+                                                            <th key={name}>{name}</th>
+                                                        ))}
+                                                        <th style={{ width: "50px" }}></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {pinForm.comparison_data.map((row, idx) => (
+                                                        <tr key={idx}>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="e.g. Print Speed"
+                                                                    value={row.feature}
+                                                                    onChange={(e) => updateComparisonRow(idx, "feature", e.target.value)}
+                                                                    className="admin-note-input"
+                                                                    style={{ width: "100%" }}
+                                                                />
+                                                            </td>
+                                                            {allProductNamesFromSections().map((name) => (
+                                                                <td key={name}>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="—"
+                                                                        value={row.products?.[name] || ""}
+                                                                        onChange={(e) => updateComparisonProduct(idx, name, e.target.value)}
+                                                                        className="admin-note-input"
+                                                                        style={{ width: "100%" }}
+                                                                    />
+                                                                </td>
+                                                            ))}
+                                                            <td>
+                                                                <button type="button" className="admin-action-btn reject" onClick={() => removeComparisonRow(idx)} style={{ padding: "0.2rem 0.5rem" }}>
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Submit */}
+                            <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                <button type="button" className="admin-filter-btn" onClick={closePinEditor}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary-solid" disabled={pinSubmitStatus === "submitting"}>
+                                    {pinSubmitStatus === "submitting" ? (
+                                        <><Loader2 size={14} className="admin-spinner" /> Saving...</>
+                                    ) : (
+                                        pinEditingId ? "Update Page" : "Create Page"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
                 {/* Stats */}
                 <div className="admin-stats">
                     {currentView === "payments" ? (
@@ -380,6 +1079,21 @@ const AdminPage = () => {
                             <div className="admin-stat-card approved">
                                 <span className="admin-stat-value">{demoCounts.contacted}</span>
                                 <span className="admin-stat-label">Contacted</span>
+                            </div>
+                        </>
+                    ) : currentView === "pinterest" ? (
+                        <>
+                            <div className="admin-stat-card">
+                                <span className="admin-stat-value">{pinPages.length}</span>
+                                <span className="admin-stat-label">Total Pages</span>
+                            </div>
+                            <div className="admin-stat-card approved">
+                                <span className="admin-stat-value">{pinPages.filter(p => p.is_published).length}</span>
+                                <span className="admin-stat-label">Published</span>
+                            </div>
+                            <div className="admin-stat-card pending">
+                                <span className="admin-stat-value">{pinPages.filter(p => !p.is_published).length}</span>
+                                <span className="admin-stat-label">Drafts</span>
                             </div>
                         </>
                     ) : (
@@ -419,7 +1133,7 @@ const AdminPage = () => {
                     ) : null}
                     <button
                         className="admin-filter-btn"
-                        onClick={currentView === "payments" ? fetchData : currentView === "demos" ? fetchDemoRequests : fetchPrinters}
+                        onClick={currentView === "payments" ? fetchData : currentView === "demos" ? fetchDemoRequests : currentView === "pinterest" ? fetchPinPages : fetchPrinters}
                         style={{ marginLeft: "auto" }}
                         title="Refresh"
                     >
@@ -434,12 +1148,12 @@ const AdminPage = () => {
                             <Loader2 size={20} className="admin-spinner" style={{ marginRight: 8 }} />
                             Loading {currentView}...
                         </div>
-                    ) : (currentView === "payments" ? displayedPayments : currentView === "demos" ? displayedDemos : printers).length === 0 ? (
+                    ) : (currentView === "payments" ? displayedPayments : currentView === "demos" ? displayedDemos : currentView === "pinterest" ? pinPages : printers).length === 0 ? (
                         <div className="admin-empty">
                             <div className="admin-empty-icon">📭</div>
                             No {currentView === "payments"
                                 ? (filter === "all" ? "" : filter)
-                                : currentView === "demos" ? (demoFilter === "all" ? "" : demoFilter) : "printer"} records found.
+                                : currentView === "demos" ? (demoFilter === "all" ? "" : demoFilter) : currentView === "pinterest" ? "pinterest" : "printer"} records found.
                         </div>
                     ) : (
                         <table className="admin-table">
@@ -624,6 +1338,73 @@ const AdminPage = () => {
                                                             ✓ Contacted
                                                         </span>
                                                     )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </>
+                            ) : currentView === "pinterest" ? (
+                                <>
+                                    <thead>
+                                        <tr>
+                                            <th>Created</th>
+                                            <th>Title / Slug</th>
+                                            <th>Sections</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {pinPages.map((p) => (
+                                            <tr key={p.id}>
+                                                <td>
+                                                    <strong>{formatDate(p.created_at)}</strong>
+                                                </td>
+                                                <td style={{ maxWidth: "250px" }}>
+                                                    <strong>{p.meta_title}</strong>
+                                                    <small>/pin/{p.slug}</small>
+                                                </td>
+                                                <td>
+                                                    <small>
+                                                        {p.sections?.length || 0} section{(p.sections?.length || 0) !== 1 ? "s" : ""}
+                                                        {" · "}
+                                                        {p.sections?.reduce((acc, s) => acc + (s.products?.length || 0), 0) || 0} product{(p.sections?.reduce((acc, s) => acc + (s.products?.length || 0), 0) || 0) !== 1 ? "s" : ""}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <span className={`admin-status-badge ${p.is_published ? "approved" : "pending"}`}>
+                                                        {p.is_published ? "Published" : "Draft"}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="admin-actions-cell" style={{ flexWrap: "wrap" }}>
+                                                        <a
+                                                            href={`/pin/${p.slug}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="admin-action-btn approve"
+                                                            style={{ textDecoration: "none" }}
+                                                        >
+                                                            <Eye size={13} /> Preview
+                                                        </a>
+                                                        <button className="admin-action-btn approve" onClick={() => openPinEditor(p)}>
+                                                            <CheckCircle size={13} /> Edit
+                                                        </button>
+                                                        <button
+                                                            className="admin-action-btn approve"
+                                                            onClick={() => handlePinDuplicate(p)}
+                                                            disabled={pinProcessingId === p.id}
+                                                        >
+                                                            {pinProcessingId === p.id ? <Loader2 size={13} className="admin-spinner" /> : <Copy size={13} />} Duplicate
+                                                        </button>
+                                                        <button
+                                                            className="admin-action-btn reject"
+                                                            onClick={() => handlePinDelete(p.id)}
+                                                            disabled={pinProcessingId === p.id}
+                                                        >
+                                                            {pinProcessingId === p.id ? <Loader2 size={13} className="admin-spinner" /> : <XCircle size={13} />} Delete
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

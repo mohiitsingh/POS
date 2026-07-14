@@ -1,17 +1,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://arambhonline.in</loc>
+    <loc>https://www.arambhonline.in</loc>
   </url>
   <url>
-    <loc>http://arambhonline.in</loc>
+    <loc>https://www.arambhonline.in/pos</loc>
   </url>
   <url>
-    <loc>arambhonline.in</loc>
+    <loc>https://www.arambhonline.in/pin</loc>
+    <lastmod>2026-07-14</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://arambhonline.in/thermal-printers</loc>
+    <loc>https://www.arambhonline.in/support</loc>
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
-    <loc>http://arambhonline.in/thermal-printers</loc>
+    <loc>https://www.arambhonline.in/privacy</loc>
+    <lastmod>2026-07-14</lastmod>
+  <url>
+    <loc>https://www.arambhonline.in/terms</loc>
+    <lastmod>2026-07-14</lastmod>
+  </url>
+  <url>
+    <loc>https://www.arambhonline.in/thermal-printers</loc>
   </url>
 </urlset>
